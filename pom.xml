@@ -15,6 +15,11 @@
     </properties>
 
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>org.mindrot</groupId>-->
+<!--            <artifactId>bcrypt</artifactId>-->
+<!--            <version>0.4</version>-->
+<!--        </dependency>-->
         <!-- Hibernate Core -->
         <dependency>
             <groupId>org.hibernate.orm</groupId>
@@ -91,6 +96,5 @@
             <version>5.9.1</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>
