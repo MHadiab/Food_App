@@ -1,7 +1,6 @@
 package entity;
 
-import jakarta.persistence.*; // Use jakarta.persistence instead of javax.persistence
-import java.util.Date;         // For Date types
+import jakarta.persistence.*; // Use jakarta.persistence instead of javax.persistence      // For Date types
 @Entity
 @Table(name = "users")
 public class User {
