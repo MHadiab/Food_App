@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/f1b7dcd0-9c68-417f-9c71-c196398542f6.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/f1b7dcd0-9c68-417f-9c71-c196398542f6/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHttpHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHttpHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/User.java" afterDir="false" />
-    </list>
+    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -72,7 +65,7 @@
       <workItem from="1747155387979" duration="39000" />
       <workItem from="1747155433391" duration="3750000" />
       <workItem from="1747222870657" duration="6103000" />
-      <workItem from="1747230009648" duration="362000" />
+      <workItem from="1747230009648" duration="834000" />
     </task>
     <servers />
   </component>
