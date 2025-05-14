@@ -1,4 +1,5 @@
 package HTTPhandler;
+
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -7,6 +8,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import util.HibernateUtil;
 import util.JwtUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -16,33 +18,33 @@ import java.nio.charset.StandardCharsets;
 public class UserHttpHandler implements HttpHandler {
 
     @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            if (exchange.getRequestMethod().equals("POST")) {
-                String path = exchange.getRequestURI().getPath();
-                if (path.equals("/user/signup")) {
-                    handleSignup(exchange);
-                } else if (path.equals("/user/login")) {
-                    handleLogin(exchange);
-                }else if (path.equals("/user/update")) {
-                    //--
-                }else{
-                    exchange.sendResponseHeaders(404, -1);
-                }
-            }else {
-                exchange.sendResponseHeaders(405, -1);
+    public void handle(HttpExchange exchange) throws IOException {
+        if (exchange.getRequestMethod().equals("POST")) {
+            String path = exchange.getRequestURI().getPath();
+            if (path.equals("/user/signup")) {
+                handleSignup(exchange);
+            } else if (path.equals("/user/login")) {
+                handleLogin(exchange);
+            } else if (path.equals("/user/update")) {
+                //--
+            } else {
+                exchange.sendResponseHeaders(404, -1);
             }
+        } else {
+            exchange.sendResponseHeaders(405, -1);
         }
+    }
 
     private void handleSignup(HttpExchange exchange) throws IOException {
-        InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(),StandardCharsets.UTF_8);
+        InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         User user = new Gson().fromJson(reader, User.class);
 
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
-            if (isUserTaken(session,user.getUsername()) || isUserTaken(session,user.getPhone())){
-                String response="User is already taken!";
-                exchange.sendResponseHeaders(400,response.getBytes().length);
+            if (isUserTaken(session, user.getUsername()) || isUserTaken(session, user.getPhone())) {
+                String response = "User is already taken!";
+                exchange.sendResponseHeaders(400, response.getBytes().length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
                 }
