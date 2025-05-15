@@ -29,6 +29,7 @@
 
         <!-- Entity mappings -->
         <mapping class="entity.User"/>
+        <mapping class="entity.Restaurant"/>
         <!--        <mapping class="entity.Chat"/>-->
         <!--        <mapping class="entity.ChatMember"/>-->
         <!--        <mapping class="entity.seller"/>-->

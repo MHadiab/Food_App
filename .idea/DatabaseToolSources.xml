@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DatabaseToolSources">
+    <data-source name="localhost" uuid="eee3c326-55a4-4635-afcd-2a25933dc70c" type="SQLITE">
+      <base-info connect-type="DB_DEFAULT" product="SQLite" version="3.45.1" major-version="3" minor-version="45" jdbc-name="SQLite JDBC" jdbc-version="3.45.1.0" jdbc-major-version="3" jdbc-minor-version="45" />
+      <user-name />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema">
+            <name qname="main" operator="@" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+      <choose-schema-mapping>
+        <introspection-scope>
+          <node kind="schema">
+            <name qname="main" operator="@" />
+          </node>
+        </introspection-scope>
+      </choose-schema-mapping>
+      <use-database kind="schema">
+        <name qname="main" operator="@" />
+      </use-database>
+      <url>jdbc:sqlite:C:/Users/MesterComputer/OneDrive/Desktop/IdeaProjects/AP_PR/Food_App/data.db</url>
+      <remarks />
+      <vm-options />
+      <driver-info id="sqlite.xerial" />
+      <ssh-properties enabled="false" />
+      <jdbc-additional-properties>
+        <property name="enable_load_extension" value="true" />
+      </jdbc-additional-properties>
+      <ssl-config enabled="false">
+        <uuid />
+        <caFile />
+        <clientCertificateFile />
+        <clientKeyFile />
+        <sslMode>REQUIRE</sslMode>
+      </ssl-config>
+    </data-source>
+  </component>
+</project>
