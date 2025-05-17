@@ -1,0 +1,192 @@
+Index: src/main/java/HTTPhandler/UserHttpHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package HTTPhandler;\r\nimport com.google.gson.Gson;\r\nimport com.sun.net.httpserver.HttpExchange;\r\nimport com.sun.net.httpserver.HttpHandler;\r\nimport entity.User;\r\nimport org.hibernate.Session;\r\nimport org.hibernate.Transaction;\r\nimport util.HibernateUtil;\r\nimport util.JwtUtil;\r\nimport java.io.IOException;\r\nimport java.io.InputStream;\r\nimport java.io.InputStreamReader;\r\nimport java.io.OutputStream;\r\nimport java.nio.charset.StandardCharsets;\r\n\r\npublic class UserHttpHandler implements HttpHandler {\r\n\r\n    @Override\r\n        public void handle(HttpExchange exchange) throws IOException {\r\n            if (exchange.getRequestMethod().equals(\"POST\")) {\r\n                String path = exchange.getRequestURI().getPath();\r\n                if (path.equals(\"/user/signup\")) {\r\n                    handleSignup(exchange);\r\n                } else if (path.equals(\"/user/login\")) {\r\n                    handleLogin(exchange);\r\n                }else if (path.equals(\"/user/update\")) {\r\n                    //--\r\n                }else{\r\n                    exchange.sendResponseHeaders(404, -1);\r\n                }\r\n            }else {\r\n                exchange.sendResponseHeaders(405, -1);\r\n            }\r\n        }\r\n\r\n    private void handleSignup(HttpExchange exchange) throws IOException {\r\n        InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(),StandardCharsets.UTF_8);\r\n        User user = new Gson().fromJson(reader, User.class);\r\n\r\n        try(Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n\r\n            if (isUserTaken(session,user.getUsername()) || isUserTaken(session,user.getPhone())){\r\n                String response=\"User is already taken!\";\r\n                exchange.sendResponseHeaders(400,response.getBytes().length);\r\n                try (OutputStream os = exchange.getResponseBody()) {\r\n                    os.write(response.getBytes());\r\n                }\r\n                return;\r\n            }\r\n            // Save the new user\r\n            session.save(user);\r\n//            Profile profile = new Profile(user.getUsername(), null, user);\r\n//            session.save(profile);\r\n\r\n            // Commit the transaction\r\n            tx.commit();\r\n            // Respond with success\r\n            String response = \"User created successfully!\";\r\n            exchange.sendResponseHeaders(201, response.getBytes().length); // 201 Created\r\n            try (OutputStream os = exchange.getResponseBody()) {\r\n                os.write(response.getBytes());\r\n            }\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            String response = \"Failed to create user\";\r\n            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error\r\n            try (OutputStream os = exchange.getResponseBody()) {\r\n                os.write(response.getBytes());\r\n            }\r\n        }\r\n    }\r\n\r\n    private void handleLogin(HttpExchange exchange) throws IOException {\r\n        // Read the request body\r\n        InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);\r\n        User loginUser = new Gson().fromJson(reader, User.class);\r\n\r\n        // Validate the user credentials\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            User user = getUserByUsername(session, loginUser.getUsername());\r\n\r\n            if (user == null || !user.getPassword().equals(loginUser.getPassword())) {\r\n                String response = \"Invalid username or password!\";\r\n                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized\r\n                try (OutputStream os = exchange.getResponseBody()) {\r\n                    os.write(response.getBytes());\r\n                }\r\n                return;\r\n            }\r\n            // Generate JWT token\r\n            String token = generateJwtToken(user);\r\n            // Respond with the JWT token\r\n            String response = \"{\\\"token\\\":\\\"\" + token + \"\\\"}\";\r\n            exchange.sendResponseHeaders(200, response.getBytes().length); // 200 OK\r\n            try (OutputStream os = exchange.getResponseBody()) {\r\n                os.write(response.getBytes());\r\n            }\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            String response = \"Failed to login\";\r\n            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error\r\n            try (OutputStream os = exchange.getResponseBody()) {\r\n                os.write(response.getBytes());\r\n            }\r\n        }\r\n    }\r\n\r\n    private boolean isUserTaken(Session session, String input) {\r\n        User user1 = session.createQuery(\"from User where username = :input\", User.class)\r\n                .setParameter(\"username\", input)\r\n                .uniqueResult();\r\n        User user2 = session.createQuery(\"from User where phone = :input\", User.class)\r\n                .setParameter(\"phone\", input)\r\n                .uniqueResult();\r\n        return user1 != null || user2 != null;\r\n    }\r\n\r\n    private User getUserByUsername(Session session, String username) {\r\n        return session.createQuery(\"from User where username = :username\", User.class)\r\n                .setParameter(\"username\", username)\r\n                .uniqueResult();\r\n    }\r\n\r\n    private String generateJwtToken(User user) {\r\n        return JwtUtil.generateToken(user.getUsername());\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/main/java/HTTPhandler/UserHttpHandler.java b/src/main/java/HTTPhandler/UserHttpHandler.java
+--- a/src/main/java/HTTPhandler/UserHttpHandler.java	(revision 46210b5031dbbc93044b77d6b9eec9761edfefd0)
++++ b/src/main/java/HTTPhandler/UserHttpHandler.java	(date 1747503937872)
+@@ -2,6 +2,7 @@
+ import com.google.gson.Gson;
+ import com.sun.net.httpserver.HttpExchange;
+ import com.sun.net.httpserver.HttpHandler;
++import entity.Response;
+ import entity.User;
+ import org.hibernate.Session;
+ import org.hibernate.Transaction;
+@@ -12,6 +13,7 @@
+ import java.io.InputStreamReader;
+ import java.io.OutputStream;
+ import java.nio.charset.StandardCharsets;
++import java.util.Map;
+ 
+ public class UserHttpHandler implements HttpHandler {
+ 
+@@ -41,10 +43,13 @@
+             Transaction tx = session.beginTransaction();
+ 
+             if (isUserTaken(session,user.getUsername()) || isUserTaken(session,user.getPhone())){
+-                String response="User is already taken!";
+-                exchange.sendResponseHeaders(400,response.getBytes().length);
++                Response<Void> apiResp = new Response<>("error", "Username already taken");
++                String jsonResp = new Gson().toJson(apiResp);
++                byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++                exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
++                exchange.sendResponseHeaders(400, bytes.length);
+                 try (OutputStream os = exchange.getResponseBody()) {
+-                    os.write(response.getBytes());
++                    os.write(bytes);
+                 }
+                 return;
+             }
+@@ -56,55 +61,86 @@
+             // Commit the transaction
+             tx.commit();
+             // Respond with success
+-            String response = "User created successfully!";
+-            exchange.sendResponseHeaders(201, response.getBytes().length); // 201 Created
++// پس از commit
++            Response<Map<String, Object>> apiResp =
++                    new Response<>("success", "User created successfully!",
++                            Map.of("userId", user.getId(), "username", user.getUsername()));
++            String jsonResp = new Gson().toJson(apiResp);
++            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++            exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
++            exchange.sendResponseHeaders(201, bytes.length);
+             try (OutputStream os = exchange.getResponseBody()) {
+-                os.write(response.getBytes());
++                os.write(bytes);
+             }
++
+         } catch (Exception e) {
+-            e.printStackTrace();
+-            String response = "Failed to create user";
+-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
++            Response<Void> apiResp = new Response<>("error","fail to create user");
++            String jsonResp = new Gson().toJson(apiResp);
++            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++            exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
++            exchange.sendResponseHeaders(400, bytes.length);
+             try (OutputStream os = exchange.getResponseBody()) {
+-                os.write(response.getBytes());
++                os.write(bytes);
+             }
+         }
+     }
+ 
+     private void handleLogin(HttpExchange exchange) throws IOException {
+-        // Read the request body
++        // تنظیم نوع محتوا
++        exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
++
++        // خواندن بدنه‌ی درخواست و دِسیریالایز به User
+         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
+         User loginUser = new Gson().fromJson(reader, User.class);
+ 
+-        // Validate the user credentials
+         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
++            // جستجوی کاربر بر اساس یوزرنیم
+             User user = getUserByUsername(session, loginUser.getUsername());
+ 
++            // اعتبارسنجی
+             if (user == null || !user.getPassword().equals(loginUser.getPassword())) {
+-                String response = "Invalid username or password!";
+-                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
++                Response<Void> apiResp = new Response<>("error", "Invalid username or password");
++                String jsonResp = new Gson().toJson(apiResp);
++                byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++
++                exchange.sendResponseHeaders(401, bytes.length);  // 401 Unauthorized
+                 try (OutputStream os = exchange.getResponseBody()) {
+-                    os.write(response.getBytes());
++                    os.write(bytes);
+                 }
+                 return;
+             }
+-            // Generate JWT token
++
++            // تولید توکن JWT
+             String token = generateJwtToken(user);
+-            // Respond with the JWT token
+-            String response = "{\"token\":\"" + token + "\"}";
+-            exchange.sendResponseHeaders(200, response.getBytes().length); // 200 OK
++
++            // ساخت پاسخ موفق
++            Map<String, String> data = Map.of(
++                    "token", token,
++                    "userId", String.valueOf(user.getId()),
++                    "role", user.getRole().name()
++            );
++            Response<Map<String, String>> apiResp =
++                    new Response<>("success", "Login successful", data);
++            String jsonResp = new Gson().toJson(apiResp);
++            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++
++            exchange.sendResponseHeaders(200, bytes.length);  // 200 OK
+             try (OutputStream os = exchange.getResponseBody()) {
+-                os.write(response.getBytes());
++                os.write(bytes);
+             }
+         } catch (Exception e) {
+             e.printStackTrace();
+-            String response = "Failed to login";
+-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
++            Response<Void> apiResp = new Response<>("error", "Failed to login");
++            String jsonResp = new Gson().toJson(apiResp);
++            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
++
++            exchange.sendResponseHeaders(500, bytes.length);  // 500 Internal Server Error
+             try (OutputStream os = exchange.getResponseBody()) {
+-                os.write(response.getBytes());
++                os.write(bytes);
+             }
+         }
+     }
++
+ 
+     private boolean isUserTaken(Session session, String input) {
+         User user1 = session.createQuery("from User where username = :input", User.class)
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"63b0684b-c48a-4859-ba1e-ab05095bf453\" name=\"Changes\" comment=\"\" />\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 8\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2x0MxPexzzCwG0ltT1ZmzfLGkjm\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;master&quot;,\r\n    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Users/ASUS/Desktop/My/FoodApp&quot;,\r\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\r\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\r\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.project.maven.repository.indices&quot;,\r\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"CopyFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\ASUS\\Desktop\\My\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46\" />\r\n        <option value=\"bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"63b0684b-c48a-4859-ba1e-ab05095bf453\" name=\"Changes\" comment=\"\" />\r\n      <created>1747070783903</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1747070783903</updated>\r\n      <workItem from=\"1747070785352\" duration=\"1179000\" />\r\n      <workItem from=\"1747071976827\" duration=\"1273000\" />\r\n      <workItem from=\"1747073644277\" duration=\"435000\" />\r\n      <workItem from=\"1747154454604\" duration=\"891000\" />\r\n      <workItem from=\"1747155387979\" duration=\"39000\" />\r\n      <workItem from=\"1747155433391\" duration=\"3750000\" />\r\n      <workItem from=\"1747222870657\" duration=\"6103000\" />\r\n      <workItem from=\"1747230009648\" duration=\"834000\" />\r\n    </task>\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 46210b5031dbbc93044b77d6b9eec9761edfefd0)
++++ b/.idea/workspace.xml	(date 1747503937918)
+@@ -4,7 +4,10 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="" />
++    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHttpHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHttpHandler.java" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -33,7 +36,7 @@
+     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.project.maven.repository.indices&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+ }</component>
+@@ -65,7 +68,9 @@
+       <workItem from="1747155387979" duration="39000" />
+       <workItem from="1747155433391" duration="3750000" />
+       <workItem from="1747222870657" duration="6103000" />
+-      <workItem from="1747230009648" duration="834000" />
++      <workItem from="1747230009648" duration="1453000" />
++      <workItem from="1747298351862" duration="105000" />
++      <workItem from="1747502926583" duration="1003000" />
+     </task>
+     <servers />
+   </component>
