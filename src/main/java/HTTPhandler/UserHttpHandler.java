@@ -2,6 +2,7 @@ package HTTPhandler;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import entity.Response;
 import entity.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -12,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class UserHttpHandler implements HttpHandler {
 
@@ -41,10 +43,13 @@ public class UserHttpHandler implements HttpHandler {
             Transaction tx = session.beginTransaction();
 
             if (isUserTaken(session,user.getUsername()) || isUserTaken(session,user.getPhone())){
-                String response="User is already taken!";
-                exchange.sendResponseHeaders(400,response.getBytes().length);
+                Response<Void> apiResp = new Response<>("error", "Username already taken");
+                String jsonResp = new Gson().toJson(apiResp);
+                byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+                exchange.sendResponseHeaders(400, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
+                    os.write(bytes);
                 }
                 return;
             }
@@ -56,55 +61,86 @@ public class UserHttpHandler implements HttpHandler {
             // Commit the transaction
             tx.commit();
             // Respond with success
-            String response = "User created successfully!";
-            exchange.sendResponseHeaders(201, response.getBytes().length); // 201 Created
+// پس از commit
+            Response<Map<String, Object>> apiResp =
+                    new Response<>("success", "User created successfully!",
+                            Map.of("userId", user.getId(), "username", user.getUsername()));
+            String jsonResp = new Gson().toJson(apiResp);
+            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+            exchange.sendResponseHeaders(201, bytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(bytes);
             }
+
         } catch (Exception e) {
-            e.printStackTrace();
-            String response = "Failed to create user";
-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
+            Response<Void> apiResp = new Response<>("error","fail to create user");
+            String jsonResp = new Gson().toJson(apiResp);
+            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+            exchange.sendResponseHeaders(400, bytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(bytes);
             }
         }
     }
 
     private void handleLogin(HttpExchange exchange) throws IOException {
-        // Read the request body
+        // تنظیم نوع محتوا
+        exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+
+        // خواندن بدنه‌ی درخواست و دِسیریالایز به User
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         User loginUser = new Gson().fromJson(reader, User.class);
 
-        // Validate the user credentials
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // جستجوی کاربر بر اساس یوزرنیم
             User user = getUserByUsername(session, loginUser.getUsername());
 
+            // اعتبارسنجی
             if (user == null || !user.getPassword().equals(loginUser.getPassword())) {
-                String response = "Invalid username or password!";
-                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
+                Response<Void> apiResp = new Response<>("error", "Invalid username or password");
+                String jsonResp = new Gson().toJson(apiResp);
+                byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+
+                exchange.sendResponseHeaders(401, bytes.length);  // 401 Unauthorized
                 try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
+                    os.write(bytes);
                 }
                 return;
             }
-            // Generate JWT token
+
+            // تولید توکن JWT
             String token = generateJwtToken(user);
-            // Respond with the JWT token
-            String response = "{\"token\":\"" + token + "\"}";
-            exchange.sendResponseHeaders(200, response.getBytes().length); // 200 OK
+
+            // ساخت پاسخ موفق
+            Map<String, String> data = Map.of(
+                    "token", token,
+                    "userId", String.valueOf(user.getId()),
+                    "role", user.getRole().name()
+            );
+            Response<Map<String, String>> apiResp =
+                    new Response<>("success", "Login successful", data);
+            String jsonResp = new Gson().toJson(apiResp);
+            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+
+            exchange.sendResponseHeaders(200, bytes.length);  // 200 OK
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(bytes);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            String response = "Failed to login";
-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
+            Response<Void> apiResp = new Response<>("error", "Failed to login");
+            String jsonResp = new Gson().toJson(apiResp);
+            byte[] bytes = jsonResp.getBytes(StandardCharsets.UTF_8);
+
+            exchange.sendResponseHeaders(500, bytes.length);  // 500 Internal Server Error
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(bytes);
             }
         }
     }
+
 
     private boolean isUserTaken(Session session, String input) {
         User user1 = session.createQuery("from User where username = :input", User.class)
