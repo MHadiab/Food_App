@@ -1,8 +1,7 @@
 package entity;
 
 public enum Role {
-    ADMIN,
-    CUSTOMER,
+    BUYER,
     SELLER,
-    DRIVER
+    COURIER
 }

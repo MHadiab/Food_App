@@ -15,12 +15,13 @@
     </properties>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.mindrot</groupId>-->
-<!--            <artifactId>bcrypt</artifactId>-->
-<!--            <version>0.4</version>-->
-<!--        </dependency>-->
         <!-- Hibernate Core -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.36</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
