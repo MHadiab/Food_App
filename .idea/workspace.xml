@@ -5,11 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Role.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Role.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/util/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/JwtUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHttpHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dto/EditUserRequest.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,7 +74,7 @@
       <workItem from="1747230009648" duration="834000" />
       <workItem from="1747504564288" duration="2789000" />
       <workItem from="1747672363162" duration="860000" />
-      <workItem from="1747825166237" duration="2258000" />
+      <workItem from="1747825166237" duration="4479000" />
     </task>
     <servers />
   </component>
