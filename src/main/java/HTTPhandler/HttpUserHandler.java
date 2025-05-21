@@ -3,12 +3,18 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.RegisterRequest;
+import entity.Role;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import response.MessageResponse;
+import response.RegisterResponse;
+import util.HibernateUtil;
 import util.JsonHelper;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-
+import entity.User;
+import util.JwtUtil;
 
 public class HttpUserHandler implements HttpHandler {
     private static final Gson GSON = new Gson();
@@ -50,6 +56,50 @@ public class HttpUserHandler implements HttpHandler {
                 req.getPassword() == null || req.getRole() == null ||
                 req.getAddress() == null) {
             JsonHelper.sendJson(ex,400,new MessageResponse("Invalid input data"));
+            return;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+
+            
+            boolean exists = session.createQuery(
+                            "select 1 from User u where u.phone = :phone", Integer.class)
+                    .setParameter("phone", req.getPhone())
+                    .uniqueResult() != null;
+            if (exists) {
+                JsonHelper.sendJson(ex, 409, new MessageResponse("Phone number already exists"));
+                return;
+            }
+
+            // ساخت کاربر
+            User user = new User();
+            user.setFullName(req.getFullName());
+            user.setPhone(req.getPhone());
+            user.setEmail(req.getEmail());
+            user.setPassword(req.getPassword()); // در عمل هش کن
+            user.setRole(Role.valueOf(req.getRole().toUpperCase()));
+            user.setAddress(req.getAddress());
+            // بانک اینفو
+            user.setBankInfo(req.getBankInfo());
+            // تصویر پروفایل: باید ذخیره‌سازی کنی و URL را اینجا ست کنی
+//            user.setProfileImageUrl(storeImage(req.getProfileImageBase64()));
+            session.save(user);
+            tx.commit();
+
+            // تولید JWT
+            String token = JwtUtil.generateToken(user);
+
+            // پاسخ
+            RegisterResponse resp = new RegisterResponse(
+                    "User registered successfully",
+                    user.getId().toString(),
+                    token
+            );
+            JsonHelper.sendJson(ex, 201, resp);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
         }
     }
 
