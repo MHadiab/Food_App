@@ -271,11 +271,11 @@ paths:
           description: Restaurant not found
   /restaurants/{id}/item:
     parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
     post:
       tags:
         - restaurant
@@ -353,7 +353,7 @@ paths:
         '401':
           $ref: "#/components/responses/unauthorized"
 
-      
+
 
   /restaurants/{id}/menu:
     post:
@@ -390,7 +390,7 @@ paths:
         '400':
           $ref: "#/components/responses/invalid_input"
         '401':
-          $ref: "#/components/responses/unauthorized"         
+          $ref: "#/components/responses/unauthorized"
   /restaurants/{id}/menu/{title}:
     parameters:
       - name: id
@@ -442,7 +442,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/message"
-                
+
   /restaurants/{id}/menu/{title}/{item_id}:
     parameters:
       - name: id
@@ -586,7 +586,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/restaurant'
-                
+
         '401':
           $ref: '#/components/responses/unauthorized'
   /vendors/{id}/items:
@@ -652,7 +652,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/food_item'
-                
+
         '401':
           $ref: '#/components/responses/unauthorized'
   /orders:
@@ -675,7 +675,7 @@ paths:
               properties:
                 delivery_address:
                   type: string
-                vendor_id: 
+                vendor_id:
                   type: integer
                 items:
                   type: array
@@ -700,7 +700,7 @@ paths:
           description: Invalid order
         '401':
           $ref: '#/components/responses/unauthorized'
-  
+
   /orders/history:
     get:
       tags:
@@ -785,7 +785,7 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '404':
           description: Restaurant not found
-    
+
   /ratings:
     post:
       tags:
@@ -884,7 +884,7 @@ paths:
           description: Order not found
         '403':
           description: Order status change is not valid
-        '500':  
+        '500':
           description: Internal server error
         '400':
           description: Invalid delivery ID
@@ -1009,7 +1009,7 @@ paths:
                     {
                     "error":"Invalid `field name`"
                     }
-                
+
                 Insufficient Balance:
                   value: |-
                     {
@@ -1254,7 +1254,7 @@ components:
           type: string
         logoBase64:
           type: string
-    
+
     restaurants_list:
       type: array
       items:
@@ -1266,7 +1266,7 @@ components:
       properties:
         id:
           type: integer
-        name: 
+        name:
           type: string
         imageBase64:
           type: string
@@ -1286,7 +1286,7 @@ components:
     order:
       type: object
       required:
-        [id, delivery_address, id, items, vendor_id, raw_price, tax_fee, courier_fee, pay_price, status, courier_id]
+        [id, delivery_address, user_id, items, vendor_id, raw_price, tax_fee, courier_fee, pay_price, status, courier_id]
       properties:
         id:
           type: integer
@@ -1355,4 +1355,3 @@ components:
                 {
                 "error":"Invalid `field name`"
                 }
-    
