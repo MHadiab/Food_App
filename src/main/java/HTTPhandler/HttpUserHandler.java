@@ -2,6 +2,7 @@ package HTTPhandler;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import dto.EditProfileRequest;
 import dto.LoginRequest;
 import dto.RegisterRequest;
 import dto.UserInfo;
@@ -18,6 +19,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import entity.User;
 import util.JwtUtil;
+import util.TokenBlacklist;
 
 public class HttpUserHandler implements HttpHandler {
     private static final Gson GSON = new Gson();
@@ -55,7 +57,7 @@ public class HttpUserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RegisterRequest.class
         );
-        if (req.getFullName() == null || req.getPhone() == null ||
+        if (req.getFull_name() == null || req.getPhone() == null ||
                 req.getPassword() == null || req.getRole() == null ||
                 req.getAddress() == null) {
             JsonHelper.sendJson(ex,400,new MessageResponse("Invalid input data"));
@@ -75,23 +77,23 @@ public class HttpUserHandler implements HttpHandler {
             }
 
             User user = new User();
-            user.setFullName(req.getFullName());
+            user.setFull_name(req.getFull_name());
             user.setPhone(req.getPhone());
             user.setEmail(req.getEmail());
             user.setPassword(req.getPassword()); // در عمل هش کن
             user.setRole(Role.valueOf(req.getRole().toUpperCase()));
             user.setAddress(req.getAddress());
-            user.setBankInfo(req.getBankInfo());
+            user.setBank_info(req.getBank_info());
             // تصویر پروفایل: باید ذخیره‌سازی کنی و URL را اینجا ست کنی
 //            user.setProfileImageUrl(storeImage(req.getProfileImageBase64()));
-            session.save(user);
+            session.persist(user);
             tx.commit();
 
             String token = JwtUtil.generateToken(user);
 
             RegisterResponse resp = new RegisterResponse(
                     "User registered successfully",
-                    user.getId().toString(),
+                    user.getUser_id().toString(),
                     token
             );
             JsonHelper.sendJson(ex, 201, resp);
@@ -119,9 +121,14 @@ public class HttpUserHandler implements HttpHandler {
             String token = JwtUtil.generateToken(user);
 
             UserInfo info = new UserInfo(
-                    user.getId().toString(),
-                    user.getFullName(),
-                    user.getRole().name()
+                    user.getUser_id().toString(),
+                    user.getFull_name(),
+                    user.getPhone(),
+                    user.getEmail(),
+                    user.getRole().name(),
+                    user.getAddress(),
+                    user.getProfileImageBase64(),
+                    user.getBank_info()
             );
             LoginResponse resp = new LoginResponse(
                     "Login successful",
@@ -135,13 +142,88 @@ public class HttpUserHandler implements HttpHandler {
         }
     }
 
-    private void handleGetProfile(HttpExchange ex) {
+    private void handleGetProfile(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
+        }
+
+        assert auth != null;
+        String token = auth.substring(7);
+        if (!JwtUtil.validateToken(token)) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("nvalid input"));
+            return;
+        }
+
+        String userId = JwtUtil.getUserIdFromToken(token);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            User user = session.get(User.class, Long.valueOf(userId));
+            if (user == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("User not found"));
+                return;
+            }
+            UserInfo resp = new UserInfo(
+                    user.getUser_id().toString(),
+                    user.getFull_name(),
+                    user.getPhone(),
+                    user.getEmail(),
+                    user.getRole().name(),
+                    user.getAddress(),
+                    user.getProfileImageBase64(),
+                    user.getBank_info()
+            );
+            JsonHelper.sendJson(ex, 200, resp);
+        }
     }
 
-    private void handleEditProfile(HttpExchange ex) {
+    private void handleEditProfile(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth==null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
+            return;
+        }
+        String token = auth.substring(7);
+        if (!JwtUtil.validateToken(token)) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
+            return;
+        }
+        String userId = JwtUtil.getUserIdFromToken(token);
+        EditProfileRequest req=GSON.fromJson(new InputStreamReader(ex.getRequestBody(),StandardCharsets.UTF_8),EditProfileRequest.class);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            User user = session.get(User.class, Long.valueOf(userId));
+            if (user == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("User not found"));
+                return;
+            }
+            if (req.getFull_name() != null) user.setFull_name(req.getFull_name());
+            if (req.getAddress()  != null) user.setAddress(req.getAddress());
+            if (req.getBank_info() != null) user.setBank_info(req.getBank_info());
+            if (req.getEmail() != null) user.setEmail(req.getEmail());
+            if (req.getProfileImageBase64() != null) {
+                user.setProfileImageBase64(req.getProfileImageBase64());
+            }
+            session.merge(user);
+            tx.commit();
+
+        }
+
     }
 
-    private void handleLogout(HttpExchange ex) {
+    private void handleLogout(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex,401,new MessageResponse("Unauthorized"));
+            return;
+        }
+        String token = auth.substring(7);
+        if (!JwtUtil.validateToken(token)) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid input"));
+            return;
+        }
+        String userId = JwtUtil.getUserIdFromToken(token);
+        TokenBlacklist.blacklistToken(token);
+        JsonHelper.sendJson(ex, 200, new MessageResponse("User logged out successfully"));
     }
 }
 

@@ -4,6 +4,6 @@ import lombok.Setter;
 @Getter
 @Setter
  public class BankInfo {
-     private String bankName;
-     public String accountNumber;
+     private String bank_name;
+     public String account_number;
  }

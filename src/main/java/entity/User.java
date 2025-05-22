@@ -12,10 +12,10 @@ import java.util.Date;         // For Date types
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long user_id;
 
     @Column(nullable = false)
-    private String fullName;
+    private String full_name;
 
     @Column(nullable = false, unique = true)
     private String phone;
@@ -33,8 +33,8 @@ public class User {
     private String address;
 
     @Column()
-    private String profilePicture;
+    private String profileImageBase64;
 
     @Embedded
-    private BankInfo bankInfo;
+    private BankInfo bank_info;
 }

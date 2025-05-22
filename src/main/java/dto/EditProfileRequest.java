@@ -6,11 +6,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class RegisterRequest {
+public class EditProfileRequest {
+    private String id;
     private String full_name;
     private String phone;
     private String email;
-    private String password;
     private String role;
     private String address;
     private String profileImageBase64;

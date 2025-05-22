@@ -20,9 +20,9 @@ public class JwtUtil {
      */
     public static String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getId().toString())              // userId as subject
+                .setSubject(user.getUser_id().toString())              // userId as subject
                 .claim("role", user.getRole().name())             // role claim
-                .claim("fullName", user.getFullName())            // fullName claim
+                .claim("fullName", user.getFull_name())            // fullName claim
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -62,6 +62,9 @@ public class JwtUtil {
     }
 
     public static boolean validateToken(String token) {
+        if (TokenBlacklist.isBlacklisted(token)) {
+            return false;
+        }
         try {
             parseToken(token);
             return true;
@@ -69,6 +72,7 @@ public class JwtUtil {
             return false;
         }
     }
+
 
     public static Key getKey() {
         return key;
