@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dataSource name="data">
+<dataSource name="hibernate.cfg.xml/Hibernate">
   <database-model serializer="dbm" dbms="SQLITE" family-id="SQLITE" format-version="4.53">
-    <root id="1"/>
+    <root id="1">
+      <ServerVersion>3.45.1</ServerVersion>
+    </root>
     <collation id="2" parent="1" name="BINARY"/>
     <collation id="3" parent="1" name="NOCASE"/>
     <collation id="4" parent="1" name="RTRIM"/>
@@ -497,7 +499,7 @@
     </routine>
     <schema id="191" parent="1" name="main">
       <Current>1</Current>
-      <LastIntrospectionLocalTimestamp>2025-05-13.16:58:04</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2025-05-22.05:51:32</LastIntrospectionLocalTimestamp>
     </schema>
     <argument id="192" parent="16">
       <ArgumentDirection>R</ArgumentDirection>

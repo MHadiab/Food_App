@@ -1,21 +1,37 @@
-//import HTTPhandler.UserHttpHandler;
+import HTTPhandler.UserHttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
-
 public class Main {
-    public static void main(String[] args) throws Exception {
-        int port = 8090;
-        System.out.println("WebSocket server started on port " + port);
+    public static void main(String[] args) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+//        server.createContext("/auth/register", new HttpUserHandler());
+//        server.createContext("/auth/login",    new HttpUserHandler());
+//        server.createContext("/auth/profile",  new HttpUserHandler());
+//        server.createContext("/auth/logout",   new HttpUserHandler());
+//
+//        server.createContext("/restaurants",      new RestaurantHandler());
+//        server.createContext("/restaurants/mine", new RestaurantHandler());
+//        server.createContext("/restaurants/",     new RestaurantHandler());
+//
+//        server.createContext("/deliveries",       new CourierHandler());
+//        server.createContext("/vendors",          new BuyerHandler());
+//        server.createContext("/cart",             new BuyerHandler());
+//
+//        server.createContext("/orders",           new OrderHandler());
+//        server.createContext("/transactions",     new OrderHandler());
+//        server.createContext("/payment/online",   new OrderHandler());
+//
+//        server.createContext("/admin/users",          new AdminHandler());
+//        server.createContext("/admin/users/",         new AdminHandler());
+//        server.createContext("/admin/orders",         new AdminHandler());
+//        server.createContext("/admin/deliveries",     new AdminHandler());
+//        server.createContext("/admin/transactions",   new AdminHandler());
+//        server.createContext("/admin/discounts",      new AdminHandler());
+//        server.createContext("/admin/reports",        new AdminHandler());
 
-        HttpServer server2 = HttpServer.create(new InetSocketAddress(8080), 0);
-
-//        server2.createContext("/user", new UserHttpHandler());
-//        server2.createContext("/chat", new ChatHttpHandler());
-//        server2.createContext("/chatmember", new ChatMemberHttpHandler());
-//        server2.createContext("/profile", new ProfileHttpHandler());
-        server2.start();
-
-        System.out.println("Server started on http://localhost:8080");
+        server.start();
+        System.out.println("Server listening on 8080");
     }
 }
