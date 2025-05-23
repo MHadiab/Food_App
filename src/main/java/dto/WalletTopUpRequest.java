@@ -7,6 +7,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class WalletTopUpRequest {
-    private Method method;
-    private Double amount;
+    private Long amount;
 }

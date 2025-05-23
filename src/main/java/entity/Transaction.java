@@ -14,11 +14,11 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Enumerated(EnumType.STRING)
-    private TransactionType type;
-    @Column
+    private TransactionType method;
     private double amount;
-    @Column
     private LocalDateTime date;
+    private TransactionStatus status;
     @ManyToOne private User user;
+    @OneToOne private Order order;
     private String description;
 }

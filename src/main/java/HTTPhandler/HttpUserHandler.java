@@ -202,6 +202,7 @@ public class HttpUserHandler implements HttpHandler {
 
         String userId = JwtUtil.getUserIdFromToken(token);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            assert userId != null;
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("User not found"));

@@ -6,14 +6,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TransactionResponse {
-    private String id;
-    private String type;
-    private String amount;
-    private String date;
+    private Integer id;
+    private Integer order_id;
+    private Integer user_id;
+    private String method;
+    private String status;
     public TransactionResponse(Transaction tx) {
-        this.id     = tx.getId().toString();
-        this.type   = tx.getType().name().toLowerCase();
-        this.amount = String.valueOf(tx.getAmount());
-        this.date   = tx.getDate().toString();
+        this.id= Math.toIntExact(tx.getId());
+        this.order_id = Math.toIntExact(tx.getOrder().getId());
+        this.user_id= Math.toIntExact(tx.getUser().getUser_id());
+        this.method=tx.getMethod().toString();
+        this.status=tx.getStatus().toString();
     }
 }

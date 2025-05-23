@@ -1,7 +1,7 @@
 package entity;
 
 public enum OrderStatus{
-    waiting,
+    waiting_vendor,
     cancelled,
     pending,
     accepted,
