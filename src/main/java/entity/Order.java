@@ -13,7 +13,7 @@ import java.util.List;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
     @Column(nullable = false)
     private String deliveryAddress;
 
@@ -28,15 +28,15 @@ public class Order {
     @ElementCollection
     @CollectionTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"))
     @Column(name = "item_id")
-    private List<Long> itemIds;
-
+    private List<Integer> itemIds;
     private int rawPrice;
     private int taxFee;
+    private int additionalFee;
     private int courierFee;
     private int payPrice;
 
     @Column(nullable = true)
-    private Long courierId;
+    private Integer courierId;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
@@ -45,3 +45,5 @@ public class Order {
     private LocalDateTime updatedAt;
 
 }
+
+

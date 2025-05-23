@@ -1,5 +1,7 @@
 package HTTPhandler;
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.EditProfileRequest;
@@ -12,60 +14,75 @@ import org.hibernate.Transaction;
 import response.LoginResponse;
 import response.MessageResponse;
 import response.RegisterResponse;
-import util.HibernateUtil;
-import util.JsonHelper;
+import util.*;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import entity.User;
-import util.JwtUtil;
-import util.TokenBlacklist;
 
 public class HttpUserHandler implements HttpHandler {
-    private static final Gson GSON = new Gson();
-
+    private static final Gson GSON = new GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create();
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-        String method = exchange.getRequestMethod();
+    public void handle(HttpExchange ex) throws IOException {
+        String path = ex.getRequestURI().getPath();
+        String method = ex.getRequestMethod();
         try {
-            switch (path) {
-                case "/auth/register":
-                    if ("POST".equalsIgnoreCase(method)) handleRegister(exchange);
-                    break;
-                case "/auth/login":
-                    if ("POST".equalsIgnoreCase(method)) handleLogin(exchange);
-                    break;
-                case "/auth/profile":
-                    if ("GET".equalsIgnoreCase(method)) handleGetProfile(exchange);
-                    else if ("PUT".equalsIgnoreCase(method)) handleEditProfile(exchange);
-                    break;
-                case "/auth/logout":
-                    if ("POST".equalsIgnoreCase(method)) handleLogout(exchange);
-                    break;
-                default:
-                    exchange.sendResponseHeaders(404, -1);
+            if ("/auth/register".equals(path) && "POST".equalsIgnoreCase(method)) {
+                handleRegister(ex);
+            }
+            else if ("/auth/login".equals(path) && "POST".equalsIgnoreCase(method)) {
+                handleLogin(ex);
+            }
+            else if (path.matches("/auth/profile(/\\d+)?")) {
+                if ("GET".equalsIgnoreCase(method))      handleGetProfile(ex);
+                else if ("PUT".equalsIgnoreCase(method)) handleEditProfile(ex);
+                else ex.sendResponseHeaders(405, -1);
+            }
+            else if ("/auth/logout".equals(path) && "POST".equalsIgnoreCase(method)) {
+                handleLogout(ex);
+            }
+            else {
+                ex.sendResponseHeaders(404, -1);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            exchange.sendResponseHeaders(500, -1);
+            ex.sendResponseHeaders(500, -1);
         }
     }
 
     private void handleRegister(HttpExchange ex) throws IOException {
+
         RegisterRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RegisterRequest.class
         );
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
+        String clientIp = ex.getRemoteAddress()
+                .getAddress()
+                .getHostAddress();
+        if (RateLimiter.allowRequest(clientIp)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
         if (req.getFull_name() == null || req.getPhone() == null ||
                 req.getPassword() == null || req.getRole() == null ||
                 req.getAddress() == null) {
-            JsonHelper.sendJson(ex,400,new MessageResponse("Invalid input data"));
+            JsonHelper.sendJson(ex,400,new MessageResponse("Invalid input"));
             return;
         }
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
-
 
             boolean exists = session.createQuery(
                             "select 1 from User u where u.phone = :phone", Integer.class)
@@ -84,8 +101,7 @@ public class HttpUserHandler implements HttpHandler {
             user.setRole(Role.valueOf(req.getRole().toUpperCase()));
             user.setAddress(req.getAddress());
             user.setBank_info(req.getBank_info());
-            // تصویر پروفایل: باید ذخیره‌سازی کنی و URL را اینجا ست کنی
-//            user.setProfileImageUrl(storeImage(req.getProfileImageBase64()));
+
             session.persist(user);
             tx.commit();
 
@@ -96,7 +112,7 @@ public class HttpUserHandler implements HttpHandler {
                     user.getUser_id().toString(),
                     token
             );
-            JsonHelper.sendJson(ex, 201, resp);
+            JsonHelper.sendJson(ex, 200, resp);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,13 +125,28 @@ public class HttpUserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(),StandardCharsets.UTF_8),
                 LoginRequest.class
         );
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
+        String clientIp = ex.getRemoteAddress()
+                .getAddress()
+                .getHostAddress();
+        if (RateLimiter.allowRequest(clientIp)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.createQuery(
                             "from User where phone = :phone", User.class)
                     .setParameter("phone", req.getPhone())
                     .uniqueResult();
             if (user == null || !user.getPassword().equals(req.getPassword())) {
-                JsonHelper.sendJson(ex,401,new MessageResponse("Invalid phone or password"));
+                JsonHelper.sendJson(ex,400,new MessageResponse("Invalid input"));
                 return;
             }
             String token = JwtUtil.generateToken(user);
@@ -131,7 +162,7 @@ public class HttpUserHandler implements HttpHandler {
                     user.getBank_info()
             );
             LoginResponse resp = new LoginResponse(
-                    "Login successful",
+                    "User logged in successfully",
                     token,
                     info
             );
@@ -148,10 +179,24 @@ public class HttpUserHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
         }
 
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
         assert auth != null;
         String token = auth.substring(7);
+
+        String userKey = JwtUtil.getUserIdFromToken(token);
+        if (RateLimiter.allowRequest(userKey)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
+
         if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("nvalid input"));
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
             return;
         }
 
@@ -182,11 +227,25 @@ public class HttpUserHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
             return;
         }
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
         String token = auth.substring(7);
+        String userKey = JwtUtil.getUserIdFromToken(token);
+        if (RateLimiter.allowRequest(userKey)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
         if (!JwtUtil.validateToken(token)) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
             return;
         }
+
         String userId = JwtUtil.getUserIdFromToken(token);
         EditProfileRequest req=GSON.fromJson(new InputStreamReader(ex.getRequestBody(),StandardCharsets.UTF_8),EditProfileRequest.class);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -217,6 +276,19 @@ public class HttpUserHandler implements HttpHandler {
             return;
         }
         String token = auth.substring(7);
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
+        String userKey = JwtUtil.getUserIdFromToken(token);
+        if (RateLimiter.allowRequest(userKey)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
         if (!JwtUtil.validateToken(token)) {
             JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid input"));
             return;

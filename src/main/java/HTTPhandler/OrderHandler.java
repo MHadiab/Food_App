@@ -63,9 +63,8 @@ public class OrderHandler implements HttpHandler {
         }
         Long userId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         try(Session session= HibernateUtil.getSessionFactory().openSession()){
-            @SuppressWarnings("unchecked")
             List<Transaction> txs = session.createQuery(
-                            "from Transaction t where t.user.id = :uid order by t.date desc")
+                            "from Transaction t where t.user.id = :uid order by t.date desc",Transaction.class)
                     .setParameter("uid", userId)
                     .list();
             List<TransactionResponse> resp =txs.stream()
