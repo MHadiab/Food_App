@@ -26,4 +26,13 @@ public class Restaurant {
     @Column(columnDefinition = "TEXT")
     private String logoBase64;
 
+    @Column(nullable = false)
+    private Integer tax_fee;
+
+    @Column(nullable = false)
+    private Integer additional_fee;
+
+    @Column(nullable = false)
+    private long seller_id;
+
 }
