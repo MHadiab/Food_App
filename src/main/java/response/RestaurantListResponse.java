@@ -8,11 +8,9 @@ import java.util.List;
 @Getter
 @Setter
 public class RestaurantListResponse {
-    private String message;
-    private List<Restaurant> restaurants;
+    private List<RestaurantResponse> restaurants;
 
-    public RestaurantListResponse(String message, List<Restaurant> restaurants) {
-        this.message = message;
+    public RestaurantListResponse(List<RestaurantResponse> restaurants) {
         this.restaurants = restaurants;
     }
 }

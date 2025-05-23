@@ -35,6 +35,9 @@ public class User {
     @Column()
     private String profileImageBase64;
 
+    @Column(nullable = true)
+    private Double balance=0.0;
+
     @Embedded
     private BankInfo bank_info;
 }

@@ -29,10 +29,11 @@
 
         <!-- Entity mappings -->
         <mapping class="entity.User"/>
-<!--        <mapping class="entity.Chat"/>-->
-<!--        <mapping class="entity.ChatMember"/>-->
-<!--        <mapping class="entity.seller"/>-->
-<!--        <mapping class="entity.driver"/>-->
+        <mapping class="entity.User"/>
+        <mapping class="entity.Transaction"/>
+        <mapping class="entity.Order"/>
+        <mapping class="entity.Restaurant"/>
+<!--        <mapping class="entity."/>-->
 <!--        <mapping class="entity.Profile"/>-->
     </session-factory>
 </hibernate-configuration>

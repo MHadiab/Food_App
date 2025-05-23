@@ -1,66 +1,227 @@
 package HTTPhandler;
+
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import dto.EditProfileRequest;
-import dto.LoginRequest;
-import dto.RegisterRequest;
-import dto.UserInfo;
+import entity.User;
 import entity.Role;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import response.LoginResponse;
 import response.MessageResponse;
-import response.RegisterResponse;
+import response.RestaurantListResponse;
+import response.RestaurantResponse;
 import util.HibernateUtil;
 import util.JsonHelper;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import entity.User;
+import java.util.List;
+import java.util.stream.Collectors;
 import util.JwtUtil;
-import util.TokenBlacklist;
+import dto.RestaurantRequest;
+import entity.Restaurant;
+import util.RateLimiter;
 
 public class HttpRestaurantHandler implements HttpHandler {
 
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create();
 
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-        String method = exchange.getRequestMethod();
+    public void handle(HttpExchange ex) throws IOException {
+        String path = ex.getRequestURI().getPath();
+        String method = ex.getRequestMethod();
 
         try {
-            if ("/restaurants".equals(path)) {
-                if ("POST".equalsIgnoreCase(method)) {
-                    handleCreateRestaurant(exchange);  //  رستوران جدید
-                } else if ("GET".equalsIgnoreCase(method)) {
-                    handleGetRestaurants(exchange);    // گرفتن لیست همه رستوران‌ها
-                } else {
-                    exchange.sendResponseHeaders(405, -1);
-                }
-            } else if (path.startsWith("/restaurants/")) {
+            if ("/restaurants".equals(path) && "POST".equalsIgnoreCase(method)) {
+                handleCreateRestaurant(ex);
+            } else if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
+                handleGetMyRestaurants(ex);
+            } else if (path.matches("/restaurants/\\d+")) {
                 if ("PUT".equalsIgnoreCase(method)) {
-                    handleUpdateRestaurant(exchange);  // بروزرسانی رستوران
+                    handleUpdateRestaurant(ex);
                 } else {
-                    exchange.sendResponseHeaders(405, -1);
+                    ex.sendResponseHeaders(405, -1); // Method Not Allowed
                 }
             } else {
-                exchange.sendResponseHeaders(404, -1);  // مسیر پیدا نشد
+                ex.sendResponseHeaders(404, -1); // Not Found
             }
         } catch (Exception e) {
             e.printStackTrace();
-            exchange.sendResponseHeaders(500, -1);  // خطای داخلی سرور
+            ex.sendResponseHeaders(500, -1); // Internal Server Error
         }
     }
 
-    private void handleCreateRestaurant (HttpExchange exchange) throws IOException {
+    private void handleCreateRestaurant(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
+
+        String token = auth.substring(7);
+        String userRole = JwtUtil.getRoleFromToken(token);
+        if (userRole == null || !userRole.equals(Role.SELLER.name())) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can create restaurants"));
+            return;
+        }
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
+        RestaurantRequest req = GSON.fromJson(
+                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
+                RestaurantRequest.class
+        );
+
+        String clientIp = ex.getRemoteAddress()
+                .getAddress()
+                .getHostAddress();
+        if (RateLimiter.allowRequest(clientIp)) {
+            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            return;
+        }
+
+        if (req.getName() == null || req.getAddress() == null || req.getPhone() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid `field name`"));
+            return;
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+
+            Restaurant restaurant = new Restaurant();
+            restaurant.setName(req.getName());
+            restaurant.setAddress(req.getAddress());
+            restaurant.setPhone(req.getPhone());
+            restaurant.setLogoBase64(req.getLogoBase64());
+            restaurant.setTax_fee(req.getTax_fee() != null ? req.getTax_fee() : 0); // Default value
+            restaurant.setAdditional_fee(req.getAdditional_fee() != null ? req.getAdditional_fee() : 0); // Default value
+
+            session.persist(restaurant);
+            tx.commit();
+
+            RestaurantResponse response = new RestaurantResponse(restaurant);
+            JsonHelper.sendJson(ex, 201, response); // Send the created restaurant
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+        }
     }
 
-    private void handleGetRestaurants(HttpExchange exchange) throws IOException {
+    private void handleGetMyRestaurants(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
+
+        String token = auth.substring(7);
+        String userRole = JwtUtil.getRoleFromToken(token);
+        if (userRole == null || !userRole.equals(Role.SELLER.name())) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can view their restaurants"));
+            return;
+        }
+
+        String userId = JwtUtil.getUserIdFromToken(token); // Get user ID from token
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            User user = session.get(User.class, Long.valueOf(userId));
+            if (user == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
+                return;
+            }
+
+            List<Restaurant> restaurants = session.createQuery(
+                            "from Restaurant where seller_id = :sellerId", Restaurant.class) // Assuming you have seller_id in Restaurant
+                    .setParameter("sellerId", user.getUser_id())
+                    .list();
+
+            List<RestaurantResponse> restaurantResponses = restaurants.stream()
+                    .map(RestaurantResponse::new)
+                    .collect(Collectors.toList());
+
+            RestaurantListResponse response = new RestaurantListResponse(restaurantResponses);
+            JsonHelper.sendJson(ex, 200, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+        }
     }
 
-    private void handleUpdateRestaurant (HttpExchange exchange) throws IOException {}
 
+    private void handleUpdateRestaurant(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
 
+        String token = auth.substring(7);
+        String userRole = JwtUtil.getRoleFromToken(token);
+        if (userRole == null || !userRole.equals(Role.SELLER.name())) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can update restaurants"));
+            return;
+        }
+
+        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.contains("application/json")) {
+            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            return;
+        }
+
+        String path = ex.getRequestURI().getPath();
+        String[] pathParts = path.split("/");
+        Long restaurantId = Long.parseLong(pathParts[2]); // Assuming /restaurants/{id}
+
+        RestaurantRequest req = GSON.fromJson(
+                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
+                RestaurantRequest.class
+        );
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+
+            String userId = JwtUtil.getUserIdFromToken(token);
+            User user = session.get(User.class, Long.valueOf(userId));
+            if (user == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
+                return;
+            }
+
+            Restaurant restaurant = session.get(Restaurant.class, restaurantId);
+            if (restaurant == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
+                return;
+            }
+
+            // Authorization: Ensure the seller owns the restaurant
+            if (!user.getUser_id().equals(restaurant.getSeller_id())) {
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+                return;
+            }
+
+            if (req.getName() != null) restaurant.setName(req.getName());
+            if (req.getAddress() != null) restaurant.setAddress(req.getAddress());
+            if (req.getPhone() != null) restaurant.setPhone(req.getPhone());
+            if (req.getLogoBase64() != null) restaurant.setLogoBase64(req.getLogoBase64());
+            if (req.getTax_fee() != null) restaurant.setTax_fee(req.getTax_fee());
+            if (req.getAdditional_fee() != null) restaurant.setAdditional_fee(req.getAdditional_fee());
+
+            session.merge(restaurant);
+            tx.commit();
+
+            RestaurantResponse response = new RestaurantResponse(restaurant);
+            JsonHelper.sendJson(ex, 200, response); // Send the updated restaurant
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+        }
+    }
 }

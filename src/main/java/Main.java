@@ -1,4 +1,4 @@
-import HTTPhandler.UserHttpHandler;
+import HTTPhandler.HttpUserHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
