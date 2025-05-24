@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="data" uuid="5590522a-ab1f-449d-87e9-8c03d9d0fada">
+    <data-source source="LOCAL" name="data" uuid="b5fc3f69-4484-44b8-9439-f521ea529944">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
@@ -25,7 +25,7 @@
         </library>
       </libraries>
     </data-source>
-    <data-source source="LOCAL" name="hibernate.cfg.xml/Hibernate" uuid="30075f14-1962-4f69-a2d3-954640069dc4">
+    <data-source source="LOCAL" name="hibernate.cfg.xml/Hibernate" uuid="8f1cec8a-be52-473a-93e2-0b669b565875">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <imported>true</imported>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="dataSourceStorageLocal" created-in="IU-243.24978.46">
-    <data-source name="data" uuid="5590522a-ab1f-449d-87e9-8c03d9d0fada">
+    <data-source name="data" uuid="b5fc3f69-4484-44b8-9439-f521ea529944">
       <database-info product="SQLite" version="3.45.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.45.1.0" dbms="SQLITE" exact-version="3.45.1" exact-driver-version="3.45">
         <identifier-quote-string>&quot;</identifier-quote-string>
       </database-info>
@@ -13,7 +13,7 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
-    <data-source name="hibernate.cfg.xml/Hibernate" uuid="30075f14-1962-4f69-a2d3-954640069dc4">
+    <data-source name="hibernate.cfg.xml/Hibernate" uuid="8f1cec8a-be52-473a-93e2-0b669b565875">
       <database-info product="SQLite" version="3.45.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.45.1.0" dbms="SQLITE" exact-version="3.45.1" exact-driver-version="3.45">
         <identifier-quote-string>&quot;</identifier-quote-string>
       </database-info>
