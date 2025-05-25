@@ -33,6 +33,7 @@ public class OrderHandler implements HttpHandler {
     public void handle(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod();
+        System.out.println(path + " " + method);
         if ("GET".equalsIgnoreCase(method) && path.equals("/transactions")) {
             handleGetTransactions(ex);
         } else if ("POST".equalsIgnoreCase(method) && path.equals("/wallet/top-up")) {
@@ -108,6 +109,7 @@ public class OrderHandler implements HttpHandler {
     }
 
     private void handleWalletTopUp(HttpExchange ex) throws IOException {
+
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
             JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
@@ -119,16 +121,18 @@ public class OrderHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
             return;
         }
+        //اینجا یک باگ یافت شد
+//        String userKey = JwtUtil.getUserIdFromToken(token);
+//        if (!RateLimiter.allowRequest(userKey)) {
+//            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+//            return;
+//        }
 
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
-            return;
-        }
         if (!JwtUtil.validateToken(token)) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid Input"));
             return;
         }
+
         Long UserId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new Error("Forbidden"));
@@ -156,7 +160,6 @@ public class OrderHandler implements HttpHandler {
                 current = 0.0;
             }
             user.setBalance(current + req.getAmount());
-
             user.setBalance(req.getAmount() + user.getBalance());
             session.merge(user);
             tx.commit();

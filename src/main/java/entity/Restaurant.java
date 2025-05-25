@@ -5,9 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
+@Table(name = "restaurants")
 @Getter
 @Setter
-@Table(name = "restaurants")
 public class Restaurant {
 
     @Id

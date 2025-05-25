@@ -1,27 +1,33 @@
+import HTTPhandler.CourierHandler;
+import HTTPhandler.HttpRestaurantHandler;
 import HTTPhandler.HttpUserHandler;
+import HTTPhandler.OrderHandler;
 import com.sun.net.httpserver.HttpServer;
+import util.HibernateUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 public class Main {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-//        server.createContext("/auth/register", new HttpUserHandler());
-//        server.createContext("/auth/login",    new HttpUserHandler());
-//        server.createContext("/auth/profile",  new HttpUserHandler());
-//        server.createContext("/auth/logout",   new HttpUserHandler());
+        server.createContext("/auth/register", new HttpUserHandler());
+        server.createContext("/auth/login",    new HttpUserHandler());
+        server.createContext("/auth/profile",  new HttpUserHandler());
+        server.createContext("/auth/logout",   new HttpUserHandler());
 //
-//        server.createContext("/restaurants",      new RestaurantHandler());
+        server.createContext("/restaurants",      new HttpRestaurantHandler());
 //        server.createContext("/restaurants/mine", new RestaurantHandler());
 //        server.createContext("/restaurants/",     new RestaurantHandler());
 //
-//        server.createContext("/deliveries",       new CourierHandler());
+        server.createContext("/deliveries",       new CourierHandler());
 //        server.createContext("/vendors",          new BuyerHandler());
 //        server.createContext("/cart",             new BuyerHandler());
 //
-//        server.createContext("/orders",           new OrderHandler());
-//        server.createContext("/transactions",     new OrderHandler());
-//        server.createContext("/payment/online",   new OrderHandler());
+        server.createContext("/orders",           new OrderHandler());
+        server.createContext("/transactions",     new OrderHandler());
+        server.createContext("/payment/online",   new OrderHandler());
+        server.createContext("/wallet/top-up",   new OrderHandler());
+
 //
 //        server.createContext("/admin/users",          new AdminHandler());
 //        server.createContext("/admin/users/",         new AdminHandler());
@@ -33,5 +39,7 @@ public class Main {
 
         server.start();
         System.out.println("Server listening on 8080");
+                HibernateUtil.getSessionFactory().openSession().close();
+                System.out.println("Tables should be created if not exist.");
     }
 }

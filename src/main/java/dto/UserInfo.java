@@ -1,6 +1,7 @@
 package dto;
 
 import entity.BankInfo;
+import entity.User;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,5 +27,16 @@ public class UserInfo {
         this.address = address;
         this.profileImageBase64 = profileImageBase64;
         this.bank_info = bank_info;
+    }
+
+    public UserInfo(User user) {
+        this.id=user.getUser_id().toString();
+        this.full_name=user.getFull_name();
+        this.phone=user.getPhone();
+        this.email=user.getEmail();
+        this.role=user.getRole().toString();
+        this.address=user.getAddress();
+        this.profileImageBase64=user.getProfileImageBase64();
+        this.bank_info=user.getBank_info();
     }
 }

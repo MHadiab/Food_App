@@ -4,7 +4,7 @@
     <facet type="hibernate" name="Hibernate">
       <configuration>
         <datasource-map>
-          <unit-entry name="hibernate.cfg.xml" value="955d9c31-da84-4e2d-aabb-7a967e689a2f" />
+          <unit-entry name="hibernate.cfg.xml" value="cdf12fbf-4be7-4311-805c-9c32136ba9fc" />
         </datasource-map>
         <naming-strategy-map />
         <deploymentDescriptor name="hibernate.cfg.xml" url="file://$MODULE_DIR$/src/main/resources/hibernate.cfg.xml" />
@@ -13,9 +13,7 @@
     <facet type="jpa" name="JPA">
       <configuration>
         <setting name="validation-enabled" value="true" />
-        <datasource-mapping>
-          <factory-entry name="food-app" value="955d9c31-da84-4e2d-aabb-7a967e689a2f" />
-        </datasource-mapping>
+        <datasource-mapping />
         <naming-strategy-map />
       </configuration>
     </facet>
