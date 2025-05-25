@@ -11,6 +11,7 @@ import dto.UserInfo;
 import entity.Role;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import response.ErrorResponse;
 import response.LoginResponse;
 import response.MessageResponse;
 import response.RegisterResponse;
@@ -75,10 +76,19 @@ public class HttpUserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RegisterRequest.class
         );
+        if (req == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
+            return;
+        }
 
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+        // 4. چک فیلدهای ضروری
+        System.out.println(req.getPassword());
+        System.out.println(req.getRole());
+        System.out.println(req.getAddress());
+        if (req.getFull_name() == null || req.getPhone() == null
+                || req.getPassword() == null || req.getRole() == null
+                || req.getAddress() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required fields"));
             return;
         }
 
@@ -86,7 +96,7 @@ public class HttpUserHandler implements HttpHandler {
                 .getAddress()
                 .getHostAddress();
         if (RateLimiter.allowRequest(clientIp)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
             return;
         }
 
@@ -148,7 +158,7 @@ public class HttpUserHandler implements HttpHandler {
 
         String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
             return;
         }
 
@@ -156,7 +166,7 @@ public class HttpUserHandler implements HttpHandler {
                 .getAddress()
                 .getHostAddress();
         if (RateLimiter.allowRequest(clientIp)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
             return;
         }
 
@@ -201,7 +211,7 @@ public class HttpUserHandler implements HttpHandler {
 //
 //        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
 //        if (contentType == null || !contentType.contains("application/json")) {
-//            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+//            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
 //            return;
 //        }
 //
@@ -210,7 +220,7 @@ public class HttpUserHandler implements HttpHandler {
 //
 //        String userKey = JwtUtil.getUserIdFromToken(token);
 //        if (RateLimiter.allowRequest(userKey)) {
-//            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+//            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
 //            return;
 //        }
 //
@@ -314,12 +324,12 @@ private void handleLogout(HttpExchange ex) throws IOException {
     String token = auth.substring(7);
     String userKey = JwtUtil.getUserIdFromToken(token);
     if (RateLimiter.allowRequest(userKey)) {
-        JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+        JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
         return;
     }
             String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
             return;
         }
     if (TokenBlacklist.isBlacklisted(token) || !JwtUtil.validateToken(token)) {

@@ -38,7 +38,7 @@ public class Main {
 
         server.start();
         System.out.println("Server listening on 8080");
-//                HibernateUtil.getSessionFactory().openSession().close();
-//                System.out.println("Tables should be created if not exist.");
+                HibernateUtil.getSessionFactory().openSession().close();
+                System.out.println("Tables should be created if not exist.");
     }
 }

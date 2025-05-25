@@ -12,6 +12,8 @@ import entity.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+import response.ErrorResponse;
+import response.ErrorResponse;
 import response.MessageResponse;
 import response.OrderResponse;
 import util.HibernateUtil;
@@ -61,13 +63,13 @@ public class CourierHandler implements HttpHandler {
         String token = auth.substring(7);
         String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
             return;
         }
 
         String userKey = JwtUtil.getUserIdFromToken(token);
         if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
             return;
         }
 
@@ -80,7 +82,7 @@ public class CourierHandler implements HttpHandler {
                             "from Order o where o.status = :status",  // HQL با پارامتر
                             Order.class                                // نوع خروجی
                     )
-                    .setParameter("status", OrderStatus.pending)
+                    .setParameter("status", OrderStatus.PENDING)
                     .list();
             List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
                     .collect(Collectors.toList());
@@ -97,13 +99,13 @@ public class CourierHandler implements HttpHandler {
         String token = auth.substring(7);
         String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
             return;
         }
 
         String userKey = JwtUtil.getUserIdFromToken(token);
         if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
             return;
         }
 
@@ -161,7 +163,7 @@ public class CourierHandler implements HttpHandler {
             );
             JsonHelper.sendJson(ex, 200, new OrderResponse(order)); //اینجا باید پبام ساکسسفول هم بره اما مطابق senjson نیست
         } catch (Exception e) {
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server Error"));
         }
     }
 
@@ -178,13 +180,13 @@ public class CourierHandler implements HttpHandler {
         }
         String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
             return;
         }
 
         String userKey = JwtUtil.getUserIdFromToken(token);
         if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
             return;
         }
 
@@ -212,7 +214,7 @@ public class CourierHandler implements HttpHandler {
 
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new Error("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
         }
 
     }

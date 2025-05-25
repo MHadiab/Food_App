@@ -499,7 +499,7 @@
     </routine>
     <schema id="191" parent="1" name="main">
       <Current>1</Current>
-      <LastIntrospectionLocalTimestamp>2025-05-23.14:58:08</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2025-05-25.15:18:33</LastIntrospectionLocalTimestamp>
     </schema>
     <argument id="192" parent="16">
       <ArgumentDirection>R</ArgumentDirection>
@@ -1595,169 +1595,222 @@
     <table id="557" parent="191" name="sqlite_master">
       <System>1</System>
     </table>
-    <table id="558" parent="191" name="users"/>
-    <column id="559" parent="555" name="item_id">
+    <table id="558" parent="191" name="transactions"/>
+    <table id="559" parent="191" name="users"/>
+    <column id="560" parent="555" name="item_id">
       <Position>1</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="560" parent="555" name="order_id">
+    <column id="561" parent="555" name="order_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <check id="561" parent="556">
-      <Predicate>status in (&apos;waiting_vendor&apos;,&apos;cancelled&apos;,&apos;pending&apos;,&apos;accepted&apos;,&apos;received&apos;,&apos;delivered&apos;)</Predicate>
+    <check id="562" parent="556">
+      <Predicate>status in (&apos;WAITING_VENDOR&apos;,&apos;CANCELLED&apos;,&apos;PENDING&apos;,&apos;ACCEPTED&apos;,&apos;RECEIVED&apos;,&apos;DELIVERED&apos;)</Predicate>
     </check>
-    <column id="562" parent="556" name="additionalFee">
+    <column id="563" parent="556" name="additionalFee">
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="563" parent="556" name="courierFee">
+    <column id="564" parent="556" name="courierFee">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="564" parent="556" name="courierId">
+    <column id="565" parent="556" name="courierId">
       <Position>3</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="565" parent="556" name="id">
+    <column id="566" parent="556" name="id">
       <Position>4</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="566" parent="556" name="payPrice">
+    <column id="567" parent="556" name="payPrice">
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="567" parent="556" name="rawPrice">
+    <column id="568" parent="556" name="rawPrice">
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="568" parent="556" name="taxFee">
+    <column id="569" parent="556" name="taxFee">
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="569" parent="556" name="createdAt">
+    <column id="570" parent="556" name="createdAt">
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="570" parent="556" name="customer_id">
+    <column id="571" parent="556" name="customer_id">
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="571" parent="556" name="updatedAt">
+    <column id="572" parent="556" name="updatedAt">
       <Position>10</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="572" parent="556" name="deliveryAddress">
+    <column id="573" parent="556" name="deliveryAddress">
       <NotNull>1</NotNull>
       <Position>11</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="573" parent="556" name="status">
+    <column id="574" parent="556" name="status">
       <Position>12</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <key id="574" parent="556">
+    <key id="575" parent="556">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
-    <column id="575" parent="557" name="type">
+    <column id="576" parent="557" name="type">
       <Position>1</Position>
       <StoredType>TEXT|0s</StoredType>
     </column>
-    <column id="576" parent="557" name="name">
+    <column id="577" parent="557" name="name">
       <Position>2</Position>
       <StoredType>TEXT|0s</StoredType>
     </column>
-    <column id="577" parent="557" name="tbl_name">
+    <column id="578" parent="557" name="tbl_name">
       <Position>3</Position>
       <StoredType>TEXT|0s</StoredType>
     </column>
-    <column id="578" parent="557" name="rootpage">
+    <column id="579" parent="557" name="rootpage">
       <Position>4</Position>
       <StoredType>INT|0s</StoredType>
     </column>
-    <column id="579" parent="557" name="sql">
+    <column id="580" parent="557" name="sql">
       <Position>5</Position>
       <StoredType>TEXT|0s</StoredType>
     </column>
-    <check id="580" parent="558">
-      <Predicate>role between 0 and 2</Predicate>
+    <check id="581" parent="558">
+      <Predicate>method in (&apos;WALLET&apos;,&apos;ONLINE&apos;)</Predicate>
     </check>
-    <column id="581" parent="558" name="balance">
+    <check id="582" parent="558">
+      <Predicate>status between 0 and 1</Predicate>
+    </check>
+    <column id="583" parent="558" name="amount">
+      <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>float|0s</StoredType>
     </column>
-    <column id="582" parent="558" name="role">
+    <column id="584" parent="558" name="order_id">
+      <Position>2</Position>
+      <StoredType>integer|0s</StoredType>
+    </column>
+    <column id="585" parent="558" name="status">
+      <Position>3</Position>
+      <StoredType>tinyint|0s</StoredType>
+    </column>
+    <column id="586" parent="558" name="date">
+      <Position>4</Position>
+      <StoredType>timestamp|0s</StoredType>
+    </column>
+    <column id="587" parent="558" name="id">
+      <Position>5</Position>
+      <StoredType>integer|0s</StoredType>
+    </column>
+    <column id="588" parent="558" name="user_user_id">
+      <Position>6</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <column id="589" parent="558" name="description">
+      <Position>7</Position>
+      <StoredType>varchar(255)|0s</StoredType>
+    </column>
+    <column id="590" parent="558" name="method">
+      <Position>8</Position>
+      <StoredType>varchar(255)|0s</StoredType>
+    </column>
+    <index id="591" parent="558" name="sqlite_autoindex_transactions_1">
+      <ColNames>order_id</ColNames>
+      <NameSurrogate>1</NameSurrogate>
+      <Unique>1</Unique>
+    </index>
+    <key id="592" parent="558">
+      <ColNames>id</ColNames>
+      <Primary>1</Primary>
+    </key>
+    <key id="593" parent="558">
+      <ColNames>order_id</ColNames>
+      <UnderlyingIndexName>sqlite_autoindex_transactions_1</UnderlyingIndexName>
+    </key>
+    <check id="594" parent="559">
+      <Predicate>role between 0 and 2</Predicate>
+    </check>
+    <column id="595" parent="559" name="balance">
+      <Position>1</Position>
+      <StoredType>float|0s</StoredType>
+    </column>
+    <column id="596" parent="559" name="role">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="583" parent="558" name="user_id">
+    <column id="597" parent="559" name="user_id">
       <Position>3</Position>
       <StoredType>integer|0s</StoredType>
     </column>
-    <column id="584" parent="558" name="account_number">
+    <column id="598" parent="559" name="account_number">
       <Position>4</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="585" parent="558" name="address">
+    <column id="599" parent="559" name="address">
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="586" parent="558" name="bank_name">
+    <column id="600" parent="559" name="bank_name">
       <Position>6</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="587" parent="558" name="email">
+    <column id="601" parent="559" name="email">
       <Position>7</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="588" parent="558" name="full_name">
+    <column id="602" parent="559" name="full_name">
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="589" parent="558" name="password">
+    <column id="603" parent="559" name="password">
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="590" parent="558" name="phone">
+    <column id="604" parent="559" name="phone">
       <NotNull>1</NotNull>
       <Position>10</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="591" parent="558" name="profileImageBase64">
+    <column id="605" parent="559" name="profileImageBase64">
       <Position>11</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <index id="592" parent="558" name="sqlite_autoindex_users_1">
+    <index id="606" parent="559" name="sqlite_autoindex_users_1">
       <ColNames>email</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="593" parent="558" name="sqlite_autoindex_users_2">
+    <index id="607" parent="559" name="sqlite_autoindex_users_2">
       <ColNames>phone</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="594" parent="558">
+    <key id="608" parent="559">
       <ColNames>user_id</ColNames>
       <Primary>1</Primary>
     </key>
-    <key id="595" parent="558">
+    <key id="609" parent="559">
       <ColNames>email</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_users_1</UnderlyingIndexName>
     </key>
-    <key id="596" parent="558">
+    <key id="610" parent="559">
       <ColNames>phone</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_users_2</UnderlyingIndexName>
     </key>

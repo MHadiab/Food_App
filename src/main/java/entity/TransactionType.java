@@ -1,6 +1,6 @@
 package entity;
 
 public enum TransactionType {
-    wallet,
-    online
+    WALLET,
+    ONLINE
 }

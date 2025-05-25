@@ -11,11 +11,12 @@ public class RateLimiter {
     private static final Map<String, SimpleRateBucket> buckets = new ConcurrentHashMap<>();
 
     public static boolean allowRequest(String key) {
-        // مثلا 10 درخواست در دقیقه
-        return !buckets
+        // tryConsume()==true یعنی اجازه هست
+        return buckets
                 .computeIfAbsent(key, k -> new SimpleRateBucket(10, Duration.ofMinutes(1)))
                 .tryConsume();
     }
+
     public static class SimpleRateBucket {
         private final int capacity;
         private final Duration refillPeriod;

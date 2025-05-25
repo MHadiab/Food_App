@@ -5,24 +5,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/30075f14-1962-4f69-a2d3-954640069dc4.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/30075f14-1962-4f69-a2d3-954640069dc4/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/5590522a-ab1f-449d-87e9-8c03d9d0fada.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/5590522a-ab1f-449d-87e9-8c03d9d0fada/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b5fc3f69-4484-44b8-9439-f521ea529944.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/b5fc3f69-4484-44b8-9439-f521ea529944.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/food-app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/food-app.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/OrderHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/OrderHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/UserInfo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/UserInfo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Order.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Order.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/util/HibernateUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/HibernateUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/hibernate.cfg.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/hibernate.cfg.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dto/RegisterRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/RegisterRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Method.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Method.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/OrderStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/OrderStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Transaction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Transaction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/TransactionStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/TransactionStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/TransactionType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/TransactionType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/response/Error.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/ErrorResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/util/RateLimiter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/RateLimiter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/OrderHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/OrderHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/dto/RegisterRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/dto/RegisterRequest.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/Method.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/Method.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/OrderStatus.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/OrderStatus.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/Transaction.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/Transaction.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/TransactionStatus.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/TransactionStatus.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/TransactionType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/TransactionType.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/User.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/response/Error.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/util/RateLimiter$SimpleRateBucket.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/RateLimiter$SimpleRateBucket.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/util/RateLimiter.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/RateLimiter.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,10 +143,22 @@
       <workItem from="1748104206535" duration="3944000" />
       <workItem from="1748108167645" duration="70000" />
       <workItem from="1748108284136" duration="3714000" />
+      <workItem from="1748183446016" duration="4004000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/HTTPhandler/OrderHandler.java</url>
+          <line>171</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

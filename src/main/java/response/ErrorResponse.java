@@ -5,10 +5,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Error {
+public class ErrorResponse {
     private String error;
 
-    public Error(String error) {
+    public ErrorResponse(String error) {
         this.error = error;
     }
 
