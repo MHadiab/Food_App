@@ -16,10 +16,7 @@ import response.ErrorResponse;
 import response.ErrorResponse;
 import response.MessageResponse;
 import response.OrderResponse;
-import util.HibernateUtil;
-import util.JsonHelper;
-import util.JwtUtil;
-import util.RateLimiter;
+import util.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -55,24 +52,8 @@ public class CourierHandler implements HttpHandler {
 
     private void handleGetAvailable(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
-
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
             return;
@@ -92,28 +73,8 @@ public class CourierHandler implements HttpHandler {
 
     private void handleChangeStatus(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Missing or invalid Authorization header"));
-            return;
-        }
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         String[] parts = ex.getRequestURI().getPath().split("/");
         if (parts.length < 3) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
@@ -169,27 +130,8 @@ public class CourierHandler implements HttpHandler {
 
     private void handleGetHistory(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
         String token = auth.substring(7);
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
-            return;
-        }
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         String queryStr = ex.getRequestURI().getQuery();            // e.g. "search=123&vendor=Foo&user=45"
         Map<String, String> params = splitQuery(queryStr);         // به Map تبدیل می‌کند
         String search = params.get("search");                      // ممکن است null باشد

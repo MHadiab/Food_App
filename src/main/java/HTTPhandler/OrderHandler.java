@@ -13,10 +13,7 @@ import response.ErrorResponse;
 import response.ErrorResponse;
 import response.MessageResponse;
 import response.TransactionResponse;
-import util.HibernateUtil;
-import util.JsonHelper;
-import util.JwtUtil;
-import util.RateLimiter;
+import util.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,26 +46,8 @@ public class OrderHandler implements HttpHandler {
 
     private void handleOnlinePayment(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid Input"));
-            return;
-        }
+        if (ErrorHandler.FindError(ex, token)) return;
         if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
             return;
@@ -113,28 +92,8 @@ public class OrderHandler implements HttpHandler {
     private void handleWalletTopUp(HttpExchange ex) throws IOException {
 
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-        //اینجا یک باگ یافت شد
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid Input"));
-            return;
-        }
-
+        if (ErrorHandler.FindError(ex, token)) return;
         Long UserId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
@@ -148,8 +107,6 @@ public class OrderHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
             return;
         }
-
-
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             org.hibernate.Transaction tx = session.beginTransaction();
             User user = session.get(User.class, UserId);
@@ -176,29 +133,8 @@ public class OrderHandler implements HttpHandler {
 
     private void handleGetTransactions(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
-
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported Media Type"));
-            return;
-        }
-        System.out.println("hi");
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return;
-        }
-
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
-            return;
-        }
+        if (ErrorHandler.FindError(ex, token)) return;
         Long userId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Transaction> txs = session.createQuery(
