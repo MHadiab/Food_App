@@ -12,12 +12,11 @@ import entity.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+import response.ErrorResponse;
+import response.ErrorResponse;
 import response.MessageResponse;
 import response.OrderResponse;
-import util.HibernateUtil;
-import util.JsonHelper;
-import util.JwtUtil;
-import util.RateLimiter;
+import util.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -53,24 +52,8 @@ public class CourierHandler implements HttpHandler {
 
     private void handleGetAvailable(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
-
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
             return;
@@ -80,7 +63,7 @@ public class CourierHandler implements HttpHandler {
                             "from Order o where o.status = :status",  // HQL با پارامتر
                             Order.class                                // نوع خروجی
                     )
-                    .setParameter("status", OrderStatus.pending)
+                    .setParameter("status", OrderStatus.PENDING)
                     .list();
             List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
                     .collect(Collectors.toList());
@@ -90,28 +73,8 @@ public class CourierHandler implements HttpHandler {
 
     private void handleChangeStatus(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Missing or invalid Authorization header"));
-            return;
-        }
         String token = auth.substring(7);
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
-            return;
-        }
-
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         String[] parts = ex.getRequestURI().getPath().split("/");
         if (parts.length < 3) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
@@ -161,33 +124,14 @@ public class CourierHandler implements HttpHandler {
             );
             JsonHelper.sendJson(ex, 200, new OrderResponse(order)); //اینجا باید پبام ساکسسفول هم بره اما مطابق senjson نیست
         } catch (Exception e) {
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server Error"));
         }
     }
 
     private void handleGetHistory(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized"));
-            return;
-        }
         String token = auth.substring(7);
-        if (!JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
-            return;
-        }
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
-            return;
-        }
-
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
-            return;
-        }
-
+        if(ErrorHandler.FindError(ex,token)) return;
         String queryStr = ex.getRequestURI().getQuery();            // e.g. "search=123&vendor=Foo&user=45"
         Map<String, String> params = splitQuery(queryStr);         // به Map تبدیل می‌کند
         String search = params.get("search");                      // ممکن است null باشد
@@ -212,7 +156,7 @@ public class CourierHandler implements HttpHandler {
 
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new Error("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
         }
 
     }

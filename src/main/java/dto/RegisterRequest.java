@@ -1,6 +1,7 @@
 package dto;
 
 import entity.BankInfo;
+import entity.Role;
 import lombok.Getter;
 import lombok.Setter;
 

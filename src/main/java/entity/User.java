@@ -32,7 +32,7 @@ public class User {
     @Column(nullable = false)
     private String address;
 
-    @Column()
+    @Column(nullable = true)
     private String profileImageBase64;
 
     @Column(nullable = true)
