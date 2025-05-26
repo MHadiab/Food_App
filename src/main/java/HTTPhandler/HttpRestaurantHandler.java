@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import util.JwtUtil;
 import dto.RestaurantRequest;
 import entity.Restaurant;
-import util.RateLimiter;
+import util.ErrorHandler;
 
 public class HttpRestaurantHandler implements HttpHandler {
 
@@ -57,21 +57,13 @@ public class HttpRestaurantHandler implements HttpHandler {
 
     private void handleCreateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
-            return;
-        }
+        String token = auth != null ? auth.substring(7) : null; // استخراج توکن
 
-        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return; // اعتبارسنجی عمومی
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can create restaurants"));
-            return;
-        }
-
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
             return;
         }
 
@@ -79,14 +71,6 @@ public class HttpRestaurantHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RestaurantRequest.class
         );
-
-        String clientIp = ex.getRemoteAddress()
-                .getAddress()
-                .getHostAddress();
-        if (RateLimiter.allowRequest(clientIp)) {
-            JsonHelper.sendJson(ex, 429, new Error("Too many requests"));
-            return;
-        }
 
         if (req.getName() == null || req.getAddress() == null || req.getPhone() == null) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid `field name`"));
@@ -96,6 +80,8 @@ public class HttpRestaurantHandler implements HttpHandler {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
+            User user = session.get(User.class, Long.valueOf(JwtUtil.getUserIdFromToken(token))); // دریافت کاربر از توکن
+
             Restaurant restaurant = new Restaurant();
             restaurant.setName(req.getName());
             restaurant.setAddress(req.getAddress());
@@ -103,6 +89,7 @@ public class HttpRestaurantHandler implements HttpHandler {
             restaurant.setLogoBase64(req.getLogoBase64());
             restaurant.setTax_fee(req.getTax_fee() != null ? req.getTax_fee() : 0); // Default value
             restaurant.setAdditional_fee(req.getAdditional_fee() != null ? req.getAdditional_fee() : 0); // Default value
+            restaurant.setSeller_id(user.getUser_id()); // ثبت شناسه فروشنده
 
             session.persist(restaurant);
             tx.commit();
@@ -117,12 +104,10 @@ public class HttpRestaurantHandler implements HttpHandler {
 
     private void handleGetMyRestaurants(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
-            return;
-        }
+        String token = auth != null ? auth.substring(7) : null;
 
-        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can view their restaurants"));
@@ -139,7 +124,7 @@ public class HttpRestaurantHandler implements HttpHandler {
             }
 
             List<Restaurant> restaurants = session.createQuery(
-                            "from Restaurant where seller_id = :sellerId", Restaurant.class) // Assuming you have seller_id in Restaurant
+                            "from Restaurant where seller_id = :sellerId", Restaurant.class)
                     .setParameter("sellerId", user.getUser_id())
                     .list();
 
@@ -155,24 +140,15 @@ public class HttpRestaurantHandler implements HttpHandler {
         }
     }
 
-
     private void handleUpdateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
-            return;
-        }
+        String token = auth != null ? auth.substring(7) : null;
 
-        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can update restaurants"));
-            return;
-        }
-
-        String contentType = ex.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new Error("Unsupported Media Type"));
             return;
         }
 
