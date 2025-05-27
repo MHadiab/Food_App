@@ -32,7 +32,8 @@
         <mapping class="entity.User"/>
         <mapping class="entity.Transaction"/>
         <mapping class="entity.Order"/>
-<!--        <mapping class="entity."/>-->
+        <mapping class="entity.Restaurant"/>
+        <!--        <mapping class="entity."/>-->
 <!--        <mapping class="entity.Profile"/>-->
     </session-factory>
 </hibernate-configuration>

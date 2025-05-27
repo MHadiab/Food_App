@@ -39,7 +39,7 @@ public class CourierHandler implements HttpHandler {
     public void handle(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod();
-        if ("GET".equalsIgnoreCase(method) && path.equals("deliveries/available")) {
+        if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/available")) {
             handleGetAvailable(ex);
         } else if ("PATCH".equalsIgnoreCase(method) && path.matches("^/deliveries/\\d+$")) {
             handleChangeStatus(ex);
@@ -133,7 +133,7 @@ public class CourierHandler implements HttpHandler {
         String token = auth.substring(7);
         if(ErrorHandler.FindError(ex,token)) return;
         String queryStr = ex.getRequestURI().getQuery();            // e.g. "search=123&vendor=Foo&user=45"
-        Map<String, String> params = splitQuery(queryStr);         // به Map تبدیل می‌کند
+        Map<String, String> params = splitQuery.splitQuery(queryStr);         // به Map تبدیل می‌کند
         String search = params.get("search");                      // ممکن است null باشد
         String vendor = params.get("vendor");                      // ممکن است null باشد
         String userId = params.get("user");
@@ -159,18 +159,5 @@ public class CourierHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
         }
 
-    }
-
-    private Map<String, String> splitQuery(String query) {
-        if (query == null || query.isEmpty()) {
-            return Map.of();
-        }
-        return Arrays.stream(query.split("&"))
-                .map(s -> s.split("=", 2))
-                .filter(arr -> arr.length == 2)
-                .collect(Collectors.toMap(
-                        arr -> URLDecoder.decode(arr[0], UTF_8),
-                        arr -> URLDecoder.decode(arr[1], UTF_8)
-                ));
     }
 }

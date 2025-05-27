@@ -18,6 +18,7 @@ public class Transaction {
     private TransactionType method;
     private double amount;
     private LocalDateTime date;
+    @Enumerated(EnumType.STRING)
     private TransactionStatus status;
     @ManyToOne private User user;
     @OneToOne private Order order;

@@ -22,9 +22,9 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private User user;
 
-//    @ManyToOne
-//    @JoinColumn(name = "vendor_id", nullable = false)
-//    private Restaurant restaurant;
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Restaurant restaurant;
 
     @ElementCollection
     @CollectionTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"))

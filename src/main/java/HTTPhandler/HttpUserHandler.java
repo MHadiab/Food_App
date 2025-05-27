@@ -10,6 +10,7 @@ import dto.LoginRequest;
 import dto.RegisterRequest;
 import dto.UserInfo;
 import entity.Role;
+import entity.UserStatus;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import response.ErrorResponse;
@@ -148,8 +149,18 @@ public class HttpUserHandler implements HttpHandler {
                     .setParameter("phone", req.getPhone())
                     .uniqueResult();
             if (user == null || !user.getPassword().equals(req.getPassword())) {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
                 return;
+            }
+            Role role = user.getRole();
+            if (role == Role.SELLER || role == Role.COURIER) {
+                if (user.getStatus() != UserStatus.APPROVED) {
+                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+                    return;
+                }
+            }
+            if(user.getStatus() == UserStatus.REJECTED && user.getRole() == Role.BUYER) {
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
             }
             String token = JwtUtil.generateToken(user);
 
