@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderResponse {
-    private int id;//میتونه اینت باشه
+    private int id;
     private String delivery_address;
     private int customer_id;
     private int vendor_id;
@@ -29,7 +29,7 @@ public class OrderResponse {
         this.id = order.getId();
         this.delivery_address = order.getDeliveryAddress();
         this.customer_id= Math.toIntExact(order.getUser().getUser_id());
-//        this.vendor_id=order.get
+        this.vendor_id= Math.toIntExact(order.getRestaurant().getId());
         this.itemIds=order.getItemIds();
         this.raw_price=order.getRawPrice();
         this.tax_fee=order.getTaxFee();

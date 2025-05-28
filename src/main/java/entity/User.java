@@ -38,6 +38,9 @@ public class User {
     @Column(nullable = true)
     private Double balance=0.0;
 
+    @Column(nullable = true)
+    private UserStatus status;
+
     @Embedded
     private BankInfo bank_info;
 }
