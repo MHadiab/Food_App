@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import dto.RestaurantRequest;
@@ -76,6 +77,7 @@ public class HttpRestaurantHandler implements HttpHandler {
             Transaction tx = session.beginTransaction();
 
             Restaurant restaurant = new Restaurant();
+            restaurant.setSeller_id(Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token))));
             restaurant.setName(req.getName());
             restaurant.setAddress(req.getAddress());
             restaurant.setPhone(req.getPhone());
@@ -96,14 +98,14 @@ public class HttpRestaurantHandler implements HttpHandler {
 
     private void handleGetMyRestaurants(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (ErrorHandler.FindError(ex, auth)) return;
         String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can view their restaurants"));
             return;
         }
-        String userId = JwtUtil.getUserIdFromToken(token); // Get user ID from token
+        String userId = String.valueOf(JwtUtil.getUserIdFromToken(token)); // Get user ID from token
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
@@ -130,8 +132,8 @@ public class HttpRestaurantHandler implements HttpHandler {
 
     private void handleUpdateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        if (ErrorHandler.FindError(ex, auth)) return;
         String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can update restaurants"));
@@ -148,7 +150,7 @@ public class HttpRestaurantHandler implements HttpHandler {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
-            String userId = JwtUtil.getUserIdFromToken(token);
+            String userId = String.valueOf(JwtUtil.getUserIdFromToken(token));
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));

@@ -1,7 +1,4 @@
-import HTTPhandler.AdminHandler;
-import HTTPhandler.CourierHandler;
-import HTTPhandler.HttpUserHandler;
-import HTTPhandler.OrderHandler;
+import HTTPhandler.*;
 import com.sun.net.httpserver.HttpServer;
 import entity.Role;
 import entity.User;
@@ -19,9 +16,9 @@ public class Main {
         server.createContext("/auth/profile",  new HttpUserHandler());
         server.createContext("/auth/logout",   new HttpUserHandler());
 //
-//        server.createContext("/restaurants",      new RestaurantHandler());
-//        server.createContext("/restaurants/mine", new RestaurantHandler());
-//        server.createContext("/restaurants/",     new RestaurantHandler());
+        server.createContext("/restaurants",      new HttpRestaurantHandler());
+        server.createContext("/restaurants/mine", new HttpRestaurantHandler());
+        server.createContext("/restaurants/",     new HttpRestaurantHandler());
 //
         server.createContext("/deliveries",       new CourierHandler());
 //        server.createContext("/vendors",          new BuyerHandler());

@@ -32,7 +32,6 @@ public class OrderHandler implements HttpHandler {
     public void handle(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod();
-        System.out.println(path + " " + method);
         if ("GET".equalsIgnoreCase(method) && path.equals("/transactions")) {
             handleGetTransactions(ex);
         } else if ("POST".equalsIgnoreCase(method) && path.equals("/wallet/top-up")) {
