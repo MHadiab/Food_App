@@ -23,7 +23,7 @@ import util.JwtUtil;
 import dto.RestaurantRequest;
 import entity.Restaurant;
 import util.RateLimiter;
-import util.ErrorHandler; // اضافه شده
+import util.ErrorHandler;
 
 public class HttpRestaurantHandler implements HttpHandler {
 
@@ -47,20 +47,19 @@ public class HttpRestaurantHandler implements HttpHandler {
                 } else {
                     ex.sendResponseHeaders(405, -1); // Method Not Allowed
                 }
-            } else {
-                ex.sendResponseHeaders(404, -1); // Not Found
+            }  else {
+                ex.sendResponseHeaders(404, -1);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            ex.sendResponseHeaders(500, -1); // Internal Server Error
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error")); // مشکل سرور
         }
     }
 
     private void handleCreateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth != null ? auth.substring(7) : null; // استخراج توکن
-
-        if (ErrorHandler.FindError(ex, token)) return; // اعتبارسنجی عمومی
+        String token = auth != null ? auth.substring(7) : null;
+        if (ErrorHandler.FindError(ex, token)) return;
 
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
@@ -96,7 +95,7 @@ public class HttpRestaurantHandler implements HttpHandler {
             tx.commit();
 
             RestaurantResponse response = new RestaurantResponse(restaurant);
-            JsonHelper.sendJson(ex, 201, response); // Send the created restaurant
+            JsonHelper.sendJson(ex, 201, response); //  ارسال رستوران ایجاد شده به پاسخ
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
@@ -106,7 +105,6 @@ public class HttpRestaurantHandler implements HttpHandler {
     private void handleGetMyRestaurants(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth != null ? auth.substring(7) : null;
-
         if (ErrorHandler.FindError(ex, token)) return;
 
         String userRole = JwtUtil.getRoleFromToken(token);
@@ -144,7 +142,6 @@ public class HttpRestaurantHandler implements HttpHandler {
     private void handleUpdateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth != null ? auth.substring(7) : null;
-
         if (ErrorHandler.FindError(ex, token)) return;
 
         String userRole = JwtUtil.getRoleFromToken(token);
@@ -178,7 +175,7 @@ public class HttpRestaurantHandler implements HttpHandler {
                 return;
             }
 
-            // Authorization: Ensure the seller owns the restaurant
+            // اطمینان از اینکه فرد دارای این رستوران باشد
             if (!user.getUser_id().equals(restaurant.getSeller_id())) {
                 JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
                 return;
