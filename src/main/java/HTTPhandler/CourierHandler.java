@@ -54,16 +54,16 @@ public class CourierHandler implements HttpHandler {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
         if(ErrorHandler.FindError(ex,token)) return;
-        if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token))) {
+        if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token)) ) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
             return;
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Order> orders = session.createQuery(
-                            "from Order o where o.status = :status",  // HQL با پارامتر
-                            Order.class                                // نوع خروجی
+                            "from Order o where o.status = :status",
+                            Order.class
                     )
-                    .setParameter("status", OrderStatus.PENDING)
+                    .setParameter("status", OrderStatus.SUBMITTED)
                     .list();
             List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
                     .collect(Collectors.toList());
@@ -80,16 +80,30 @@ public class CourierHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
             return;
         }
-        String orderId = parts[2];
+        int orderId;
+        try {
+            orderId = Integer.parseInt(parts[2]);
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
+            return;
+        }
+
         ChangeStatusRequest req = GSON.fromJson(
-                new InputStreamReader(ex.getRequestBody(), UTF_8),
+                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 ChangeStatusRequest.class
         );
-        String newStatus = String.valueOf(req.getStatus());
-        if (newStatus == null) {
+        if (req.getStatus() == null) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Status is required"));
             return;
         }
+        OrderStatus requestedStatus;
+        try {
+            requestedStatus = OrderStatus.valueOf(String.valueOf(req.getStatus()));
+        } catch (IllegalArgumentException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid status value"));
+            return;
+        }
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, orderId);
@@ -97,34 +111,53 @@ public class CourierHandler implements HttpHandler {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Order not found"));
                 return;
             }
-            String current = String.valueOf(order.getStatus());
-            boolean valid =
-                    ("pending".equals(current) && "accepted".equals(newStatus)) ||
-                            ("accepted".equals(current) && "received".equals(newStatus)) ||
-                            ("received".equals(current) && "delivered".equals(newStatus));
-            if (!valid) {
-                JsonHelper.sendJson(ex, 403, new MessageResponse("Order status change is not valid"));
+
+            OrderStatus current = order.getStatus();
+            boolean validTransition = false;
+            switch (current) {
+                case WAITING_VENDOR:
+                    if (requestedStatus == OrderStatus.FINDING_COURIER) {
+                        validTransition = true;
+                    }
+                    break;
+                case FINDING_COURIER:
+                    if (requestedStatus == OrderStatus.ON_THE_WAY) {
+                        validTransition = true;
+                    }
+                    break;
+                case ON_THE_WAY:
+                    if (requestedStatus == OrderStatus.COMPLETED) {
+                        validTransition = true;
+                    }
+                    break;
+                default:
+                    validTransition = false;
+            }
+            if (!validTransition) {
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
                 return;
             }
-            if ("accepted".equals(newStatus) && order.getCourierId() != null) {
-                JsonHelper.sendJson(ex, 409, new MessageResponse("Delivery already assigned"));
-                return;
-            }
-            if ("accepted".equals(newStatus)) {
+
+            if (requestedStatus == OrderStatus.FINDING_COURIER) {
+                if (order.getCourierId() != null) {
+                    JsonHelper.sendJson(ex, 409, new MessageResponse("Conflict occurred"));
+                    return;
+                }
                 int courierId = Integer.parseInt(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
-                User courier = session.get(User.class, courierId);
-                order.setCourierId(Math.toIntExact(courier.getUser_id()));
+                order.setCourierId(courierId);
             }
-            order.setStatus(req.getStatus());
+
+            order.setStatus(requestedStatus);
             session.merge(order);
             tx.commit();
             Map<String, Object> data = Map.of(
                     "message", "Changed status successfully",
                     "order", new OrderResponse(order)
             );
-            JsonHelper.sendJson(ex, 200, new OrderResponse(order)); //اینجا باید پبام ساکسسفول هم بره اما مطابق senjson نیست
+            JsonHelper.sendJson(ex, 200, data);
         } catch (Exception e) {
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server Error"));
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
         }
     }
 

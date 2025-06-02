@@ -38,18 +38,20 @@ public class HttpRestaurantHandler implements HttpHandler {
 
         try {
             if ("/restaurants".equals(path) && "POST".equalsIgnoreCase(method)) {
-                handleCreateRestaurant(ex);
-            } else if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
-                handleGetMyRestaurants(ex);
-            } else if (path.matches("/restaurants/\\d+")) {
+                handleCreateRestaurant(ex); return;
+            }
+            if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
+                handleGetMyRestaurants(ex); return;
+            }
+            if (path.matches("/restaurants/\\d+")) {
                 if ("PUT".equalsIgnoreCase(method)) {
                     handleUpdateRestaurant(ex);
                 } else {
-                    ex.sendResponseHeaders(405, -1); // Method Not Allowed
+                    ex.sendResponseHeaders(405, -1);
                 }
-            }  else {
-                ex.sendResponseHeaders(404, -1);
+                return;
             }
+            ex.sendResponseHeaders(404, -1);
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error")); // مشکل سرور

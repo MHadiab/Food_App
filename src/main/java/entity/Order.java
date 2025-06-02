@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,9 +28,12 @@ public class Order {
     private Restaurant restaurant;
 
     @ElementCollection
-    @CollectionTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"))
-    @Column(name = "item_id")
-    private List<Integer> itemIds;
+    @CollectionTable(
+            name="order_items",
+            joinColumns=@JoinColumn(name="order_id")
+    )
+    private List<OrderItem> items = new ArrayList<>();
+
     private int rawPrice;
     private int taxFee;
     private int additionalFee;
@@ -46,5 +50,6 @@ public class Order {
     private LocalDateTime updatedAt;
 
 }
+
 
 

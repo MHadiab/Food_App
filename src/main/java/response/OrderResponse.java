@@ -1,11 +1,13 @@
 package response;
 
 import entity.Order;
+import entity.OrderItem;
 import entity.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -15,7 +17,7 @@ public class OrderResponse {
     private String delivery_address;
     private int customer_id;
     private int vendor_id;
-    private List<Integer> itemIds;
+    private List<OrderItem> items;
     private int raw_price;
     private int tax_fee;
     private int additional_fee;
@@ -30,7 +32,7 @@ public class OrderResponse {
         this.delivery_address = order.getDeliveryAddress();
         this.customer_id= Math.toIntExact(order.getUser().getUser_id());
         this.vendor_id= Math.toIntExact(order.getRestaurant().getId());
-        this.itemIds=order.getItemIds();
+        this.items=order.getItems();
         this.raw_price=order.getRawPrice();
         this.tax_fee=order.getTaxFee();
         this.additional_fee=order.getAdditionalFee();

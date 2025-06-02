@@ -121,9 +121,8 @@ public class AdminHandler implements HttpHandler {
     }
 
     private void handleUpdateUserStatus(HttpExchange ex, String path) throws IOException, java.io.IOException {
-
-        long userId = Long.parseLong(path.split("/")[3]);
-         UserStatusRequest req = GSON.fromJson(
+        long userId = Long.parseLong(path);
+        UserStatusRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                  UserStatusRequest.class
         );

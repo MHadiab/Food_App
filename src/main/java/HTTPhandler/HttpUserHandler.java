@@ -34,7 +34,6 @@ public class HttpUserHandler implements HttpHandler {
     public void handle(HttpExchange ex) throws IOException {
         String fullPath = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod();
-        System.out.printf(" >> Request: %s %s%n", method, fullPath);
 
         try {
             String sub = fullPath.substring("/auth".length());

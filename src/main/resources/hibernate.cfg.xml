@@ -33,8 +33,8 @@
         <mapping class="entity.Transaction"/>
         <mapping class="entity.Order"/>
         <mapping class="entity.Restaurant"/>
-<!--        <mapping class="entity."/>-->
-<!--        <mapping class="entity.Profile"/>-->
+        <mapping class="entity.Menu"/>
+        <mapping class="entity.FoodItem"/>
     </session-factory>
 </hibernate-configuration>
 
