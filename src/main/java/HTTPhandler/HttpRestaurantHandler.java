@@ -12,17 +12,18 @@ import org.hibernate.Transaction;
 import response.MessageResponse;
 import response.RestaurantListResponse;
 import response.RestaurantResponse;
-import util.*;
-
+import util.HibernateUtil;
+import util.JsonHelper;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-
+import util.JwtUtil;
 import dto.RestaurantRequest;
 import entity.Restaurant;
+import util.RateLimiter;
+import util.ErrorHandler;
 
 public class HttpRestaurantHandler implements HttpHandler {
 
@@ -37,37 +38,42 @@ public class HttpRestaurantHandler implements HttpHandler {
 
         try {
             if ("/restaurants".equals(path) && "POST".equalsIgnoreCase(method)) {
-                handleCreateRestaurant(ex);
-            } else if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
-                handleGetMyRestaurants(ex);
-            } else if (path.matches("/restaurants/\\d+")) {
+                handleCreateRestaurant(ex); return;
+            }
+            if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
+                handleGetMyRestaurants(ex); return;
+            }
+            if (path.matches("/restaurants/\\d+")) {
                 if ("PUT".equalsIgnoreCase(method)) {
                     handleUpdateRestaurant(ex);
                 } else {
-                    ex.sendResponseHeaders(405, -1); // Method Not Allowed
+                    ex.sendResponseHeaders(405, -1);
                 }
-            } else {
-                ex.sendResponseHeaders(404, -1); // Not Found
+                return;
             }
+            ex.sendResponseHeaders(404, -1);
         } catch (Exception e) {
             e.printStackTrace();
-            ex.sendResponseHeaders(500, -1); // Internal Server Error
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error")); // مشکل سرور
         }
     }
 
     private void handleCreateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
+        String token = auth != null ? auth.substring(7) : null;
         if (ErrorHandler.FindError(ex, token)) return;
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can create restaurants"));
             return;
         }
+
         RestaurantRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RestaurantRequest.class
         );
+
         if (req.getName() == null || req.getAddress() == null || req.getPhone() == null) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid `field name`"));
             return;
@@ -76,20 +82,22 @@ public class HttpRestaurantHandler implements HttpHandler {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
+            User user = session.get(User.class, Long.valueOf(JwtUtil.getUserIdFromToken(token))); // دریافت کاربر از توکن
+
             Restaurant restaurant = new Restaurant();
-            restaurant.setSeller_id(Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token))));
             restaurant.setName(req.getName());
             restaurant.setAddress(req.getAddress());
             restaurant.setPhone(req.getPhone());
             restaurant.setLogoBase64(req.getLogoBase64());
             restaurant.setTax_fee(req.getTax_fee() != null ? req.getTax_fee() : 0); // Default value
             restaurant.setAdditional_fee(req.getAdditional_fee() != null ? req.getAdditional_fee() : 0); // Default value
+            restaurant.setSeller_id(user.getUser_id()); // ثبت شناسه فروشنده
 
             session.persist(restaurant);
             tx.commit();
 
             RestaurantResponse response = new RestaurantResponse(restaurant);
-            JsonHelper.sendJson(ex, 201, response); // Send the created restaurant
+            JsonHelper.sendJson(ex, 201, response); //  ارسال رستوران ایجاد شده به پاسخ
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
@@ -98,22 +106,26 @@ public class HttpRestaurantHandler implements HttpHandler {
 
     private void handleGetMyRestaurants(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
+        String token = auth != null ? auth.substring(7) : null;
         if (ErrorHandler.FindError(ex, token)) return;
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can view their restaurants"));
             return;
         }
-        String userId = String.valueOf(JwtUtil.getUserIdFromToken(token)); // Get user ID from token
+
+        String userId = JwtUtil.getUserIdFromToken(token); // Get user ID from token
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
                 return;
             }
+
             List<Restaurant> restaurants = session.createQuery(
-                            "from Restaurant where seller_id = :sellerId", Restaurant.class) // Assuming you have seller_id in Restaurant
+                            "from Restaurant where seller_id = :sellerId", Restaurant.class)
                     .setParameter("sellerId", user.getUser_id())
                     .list();
 
@@ -129,16 +141,17 @@ public class HttpRestaurantHandler implements HttpHandler {
         }
     }
 
-
     private void handleUpdateRestaurant(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
+        String token = auth != null ? auth.substring(7) : null;
         if (ErrorHandler.FindError(ex, token)) return;
+
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only sellers can update restaurants"));
             return;
         }
+
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]); // Assuming /restaurants/{id}
@@ -147,22 +160,24 @@ public class HttpRestaurantHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RestaurantRequest.class
         );
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
-            String userId = String.valueOf(JwtUtil.getUserIdFromToken(token));
+            String userId = JwtUtil.getUserIdFromToken(token);
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
                 return;
             }
+
             Restaurant restaurant = session.get(Restaurant.class, restaurantId);
             if (restaurant == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found"));
                 return;
             }
 
-            // Authorization: Ensure the seller owns the restaurant
+            // اطمینان از اینکه فرد دارای این رستوران باشد
             if (!user.getUser_id().equals(restaurant.getSeller_id())) {
                 JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
                 return;

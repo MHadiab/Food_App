@@ -11,18 +11,15 @@ import java.net.InetSocketAddress;
 public class Main {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        server.createContext("/auth/register", new HttpUserHandler());
-        server.createContext("/auth/login",    new HttpUserHandler());
-        server.createContext("/auth/profile",  new HttpUserHandler());
-        server.createContext("/auth/logout",   new HttpUserHandler());
+        server.createContext("/auth", new HttpUserHandler());
 //
         server.createContext("/restaurants",      new HttpRestaurantHandler());
-        server.createContext("/restaurants/mine", new HttpRestaurantHandler());
-        server.createContext("/restaurants/",     new HttpRestaurantHandler());
+
+
 //
-        server.createContext("/deliveries",       new CourierHandler());
-//        server.createContext("/vendors",          new BuyerHandler());
-//        server.createContext("/cart",             new BuyerHandler());
+//        server.createContext("/deliveries",       new CourierHandler());
+////        server.createContext("/vendors",          new BuyerHandler());
+////        server.createContext("/cart",             new BuyerHandler());
 //
         server.createContext("/orders",           new OrderHandler());
         server.createContext("/transactions",     new OrderHandler());
