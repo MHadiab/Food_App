@@ -97,7 +97,7 @@ public class HttpRestaurantHandler implements HttpHandler {
             tx.commit();
 
             RestaurantResponse response = new RestaurantResponse(restaurant);
-            JsonHelper.sendJson(ex, 201, response); //  ارسال رستوران ایجاد شده به پاسخ
+            JsonHelper.sendJson(ex, 200, response); //  ارسال رستوران ایجاد شده به پاسخ
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));

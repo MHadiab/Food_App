@@ -4,7 +4,8 @@ import jakarta.persistence.*; // Use jakarta.persistence instead of javax.persis
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;         // For Date types
+import java.util.*;
+
 @Entity
 @Getter
 @Setter
@@ -43,4 +44,12 @@ public class User {
 
     @Embedded
     private BankInfo bank_info;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_favorites",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "restaurant_id")
+    )
+    private Set<Restaurant> favorites = new HashSet<>();
 }

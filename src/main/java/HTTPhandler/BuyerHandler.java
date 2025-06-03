@@ -12,9 +12,7 @@ import io.jsonwebtoken.io.IOException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-import response.ErrorResponse;
-import response.MessageResponse;
-import response.OrderResponse;
+import response.*;
 import util.ErrorHandler;
 import util.HibernateUtil;
 import util.JsonHelper;
@@ -22,9 +20,7 @@ import util.JwtUtil;
 
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -48,6 +44,96 @@ public class BuyerHandler implements HttpHandler {
         if ("GET".equalsIgnoreCase(method) && path.equals("/orders/history")) {
             handleOrderHistory(ex); return;
         }
+        if("PUT".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
+            String[] parts = path.split("/");
+            if (parts.length != 3) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+            }
+            String idStr = parts[2];
+            long vendor_id = Long.parseLong(idStr);
+            handleCreateFavorite(ex,vendor_id); return;
+        }
+        if ("GET".equalsIgnoreCase(method) && path.equals("/favorites")) {
+            handleGetFavorites(ex); return;
+        }
+        if("DELETE".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
+            String[] parts = path.split("/");
+            if (parts.length != 3) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+            }
+            String idStr = parts[2];
+            long vendor_id = Long.parseLong(idStr);
+            handleDeleteFavorite(ex,vendor_id);return;
+        }
+    }
+
+    private void handleDeleteFavorite(HttpExchange ex, long vendorId) throws java.io.IOException {
+        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String token=auth.substring(7);
+        if (ErrorHandler.FindError(ex,token)) return;
+        long userId = Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            User user = session.get(User.class, userId);
+            Set<Restaurant> favorites=user.getFavorites();
+            Restaurant restaurant=session.get(Restaurant.class, vendorId);
+            if(restaurant==null) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid id"));return;
+            }
+            if(!favorites.contains(restaurant)) {
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));return;
+            }
+            user.getFavorites().remove(restaurant);
+            session.merge(user);
+            transaction.commit();
+            JsonHelper.sendJson(ex, 200, new MessageResponse("Removed from favorites"));
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
+    }
+    private void handleGetFavorites(HttpExchange ex) throws java.io.IOException {
+        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String token=auth.substring(7);
+        if (ErrorHandler.FindError(ex,token)) return;
+        long userId = Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            User user = session.get(User.class, userId);
+            Set<Restaurant> favorites=user.getFavorites();
+            Set<RestaurantResponse> resp = favorites.stream()
+                    .map(RestaurantResponse::new)
+                    .collect(Collectors.toSet());
+            JsonHelper.sendJson(ex, 200, resp);
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
+    }
+
+    private void handleCreateFavorite(HttpExchange ex, long vendor_id) throws IOException, java.io.IOException {
+        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex,token)) return;
+        if(!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("buyer")){
+            JsonHelper.sendJson(ex,403,new ErrorResponse("Forbidden request")); return;
+        }
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            Restaurant restaurant = (Restaurant)session.get(Restaurant.class,vendor_id);
+            if(restaurant==null){
+                JsonHelper.sendJson(ex,400,new ErrorResponse("Invalid id")); return;
+            }
+            Long userId= Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
+            User user = (User)session.get(User.class,userId);
+            user.getFavorites().add(restaurant);
+            session.merge(user);
+            transaction.commit();
+            JsonHelper.sendJson(ex,200,new MessageResponse("Added to favorites"));
+        }catch (Exception e){
+            e.printStackTrace();
+            JsonHelper.sendJson(ex,500,new ErrorResponse("Internal Server Error"));
+        }
     }
 
     private void handleOrderHistory(HttpExchange ex) throws java.io.IOException {
@@ -56,12 +142,12 @@ public class BuyerHandler implements HttpHandler {
         if(ErrorHandler.FindError(ex,token)) return;
         String role = JwtUtil.getRoleFromToken(token);
         if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can view order history"));
+            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: Only buyers can view order history"));
             return;
         }
         String userIdStr = JwtUtil.getUserIdFromToken(token);
         if (userIdStr == null) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Invalid or expired token"));
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("Invalid or expired token"));
             return;
         }
         Long userId = Long.valueOf(userIdStr);
@@ -93,7 +179,7 @@ public class BuyerHandler implements HttpHandler {
                     Integer vendorId = Integer.valueOf(vendorParam);
                     query.setParameter("vendorId", vendorId);
                 } catch (NumberFormatException e) {
-                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid `vendor` parameter"));
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid `vendor` parameter"));
                     return;
                 }
             }
@@ -120,14 +206,14 @@ public class BuyerHandler implements HttpHandler {
         }
         String[] parts = ex.getRequestURI().getPath().split("/");
         if (parts.length < 3) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid id"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid id"));
             return;
         }
         int orderId;
         try {
             orderId = Integer.parseInt(parts[2]);
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid id"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid id"));
             return;
         }
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
