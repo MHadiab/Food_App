@@ -7,12 +7,25 @@
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/RestaurantListResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/RestaurantListResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Order.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Order.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/response/OrderResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/OrderResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/Order.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/Order.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/entity/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/User.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/response/RestaurantListResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/RestaurantListResponse.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.txt" beforeDir="false" afterPath="$PROJECT_DIR$/test.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -58,7 +71,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.project.maven.repository.indices&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
   &quot;keyToStringList&quot;: {
@@ -139,6 +152,11 @@
       <workItem from="1748858272331" duration="6749000" />
       <workItem from="1748886080581" duration="832000" />
       <workItem from="1748933934803" duration="6045000" />
+      <workItem from="1748958707668" duration="3806000" />
+      <workItem from="1748962678507" duration="5633000" />
+      <workItem from="1749036130576" duration="3286000" />
+      <workItem from="1749039473776" duration="4149000" />
+      <workItem from="1749043691240" duration="1157000" />
     </task>
     <servers />
   </component>

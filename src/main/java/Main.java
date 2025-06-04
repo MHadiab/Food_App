@@ -14,14 +14,13 @@ public class Main {
 
         server.createContext("/auth", new HttpUserHandler());
         server.createContext("/restaurants",      new RestaurantDispatcher());
-
-        server.createContext("/orders",           new OrderHandler());
+        server.createContext("/orders",           new BuyerHandler());
         server.createContext("/transactions",     new OrderHandler());
         server.createContext("/payment/online",   new OrderHandler());
         server.createContext("/wallet/top-up",   new OrderHandler());
-
         server.createContext("/admin",          new AdminHandler());
-
+        server.createContext("/favorites",     new BuyerHandler());
+        server.createContext("/deliveries", new CourierHandler());
 
         server.start();
         System.out.println("Server listening on 8080");

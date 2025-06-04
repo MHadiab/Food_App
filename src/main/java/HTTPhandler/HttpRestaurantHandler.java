@@ -5,25 +5,25 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import entity.User;
-import entity.Role;
+import dto.ChangeStatusRequest;
+import dto.ResChangeStatus;
+import entity.*;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import response.MessageResponse;
-import response.RestaurantListResponse;
-import response.RestaurantResponse;
-import util.HibernateUtil;
-import util.JsonHelper;
+import org.hibernate.query.Query;
+import response.*;
+import util.*;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import util.JwtUtil;
+
 import dto.RestaurantRequest;
-import entity.Restaurant;
-import util.RateLimiter;
-import util.ErrorHandler;
 
 public class HttpRestaurantHandler implements HttpHandler {
 
@@ -51,10 +51,168 @@ public class HttpRestaurantHandler implements HttpHandler {
                 }
                 return;
             }
+            if("GET".equalsIgnoreCase(method) && path.matches("^/restaurants/\\d+/orders$")) {
+                String[] parts = path.split("/");
+                if (parts.length !=4) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+                }
+                String idStr = parts[2];
+                long vendor_id = Long.parseLong(idStr);
+                handleGetOrders(ex,vendor_id); return;
+            }
+            if ("PATCH".equalsIgnoreCase(method) && path.matches("^/restaurants/orders/\\d+$")) {
+                System.out.println("hi");
+                String[] parts = path.split("/");
+                if (parts.length != 4) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+                }
+                String idStr = parts[3];
+                long vendor_id = Long.parseLong(idStr);
+                handleOrderStatus(ex,vendor_id);return;
+
+            }
             ex.sendResponseHeaders(404, -1);
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error")); // مشکل سرور
+        }
+    }
+
+    private void handleOrderStatus(HttpExchange ex, long orderId) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if(ErrorHandler.FindError(ex,token)) return;
+        if(!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("SELLER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+        }
+        String[] parts = ex.getRequestURI().getPath().split("/");
+        if (parts.length < 3) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid delivery ID"));
+            return;
+        }
+        ResChangeStatus req = GSON.fromJson(
+                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
+                ResChangeStatus.class
+        );
+        if (req.getStatus() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid status"));
+            return;
+        }
+        OrderStatus requestedStatus;
+        try {
+            requestedStatus = OrderStatus.valueOf(req.getStatus().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid status value"));
+            return;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            Order order = session.get(Order.class, orderId);
+            if (order == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Order not found"));
+                return;
+            }
+            OrderStatus current = order.getStatus();
+            boolean validTransition = false;
+            switch (current) {
+                case SUBMITTED:
+                    if (requestedStatus == OrderStatus.UNPAID_AND_CANCELLED ||
+                    requestedStatus == OrderStatus.WAITING_VENDOR) {
+                        validTransition = true;
+                    }
+                    break;
+                case WAITING_VENDOR:
+                    if (requestedStatus == OrderStatus.FINDING_COURIER ||
+                    requestedStatus == OrderStatus.CANCELLED) {
+                        validTransition = true;
+                    }
+                    break;
+                default:
+                    validTransition = false;
+            }
+            if (!validTransition) {
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+                return;
+            }
+            order.setStatus(requestedStatus);
+            session.merge(order);
+            tx.commit();
+            JsonHelper.sendJson(ex, 200, new MessageResponse("Order status changed successfully"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+        }
+    }
+
+    private void handleGetOrders(HttpExchange ex,long id) throws IOException {
+
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        ErrorHandler.FindError(ex,token);
+        if(!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("SELLER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+        }
+        String query = ex.getRequestURI().getQuery();
+        Map<String, String> params = splitQuery.splitQuery(query);
+        String search = params.get("search");
+        String status = params.get("status");
+        String user = params.get("user");
+        String courier = params.get("courier");
+        OrderStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusEnum = OrderStatus.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid status value: " + status));
+                return;
+            }
+        }
+        StringBuilder hql = new StringBuilder();
+        hql.append("SELECT DISTINCT o")
+                .append(" FROM Order o")
+                .append(" JOIN o.items oi")
+                .append(" JOIN FoodItem fi ON fi.id = oi.itemId")
+                .append(" JOIN fi.keywords kw");
+        if (user != null && !user.isBlank()) {
+            hql.append(" JOIN o.user u");                       // اتصال به User
+        }
+        hql.append(" WHERE o.restaurant.id = :restaurantId");
+
+        if (search != null && !search.isBlank()) {
+            hql.append(" AND (cast(oi.itemId as string) LIKE :search OR kw LIKE :search)");
+        }
+        if (status != null && !status.isBlank()) {
+            hql.append(" AND o.status = :status");
+        }
+        if (user != null && !user.isBlank()) {
+            hql.append(" AND (cast(u.id as string) LIKE :user OR u.full_name LIKE :user)");
+        }
+        if (courier != null && !courier.isBlank()) {
+            hql.append(" AND o.courierId = :courier");
+        }
+
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Restaurant restaurant = session.get(Restaurant.class, id);
+            String seller=JwtUtil.getUserIdFromToken(token);
+            if (restaurant == null) {
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));return;
+            }
+            assert seller != null;
+            if(restaurant.getSeller_id()!=Long.parseLong(seller)) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Forbidden request"));return;
+            }
+            Query<entity.Order> o = session.createQuery(hql.toString(), entity.Order.class);
+            o.setParameter("restaurantId", id);
+            if (search != null) o.setParameter("search", search);
+            if (status != null) o.setParameter("status", statusEnum);
+            if (user != null) o.setParameter("user", user);
+            if (courier != null) o.setParameter("courier", courier);
+            List<entity.Order> orders = o.list();
+            List<OrderResponse> resp=orders.stream().map(OrderResponse::new).toList();
+            JsonHelper.sendJson(ex,200,resp);
+        } catch (IOException e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex,500,new ErrorResponse("Internal server error"));
         }
     }
 

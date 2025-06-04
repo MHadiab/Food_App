@@ -92,7 +92,7 @@ public class AdminHandler implements HttpHandler {
         String customer = params.get("customer");
         String status = params.get("status");
 
-        StringBuilder hql = new StringBuilder("From order o WHERE 1=1");
+        StringBuilder hql = new StringBuilder("From Order o WHERE 1=1");
         if (search != null) hql.append(" AND (cast(o.id as string) LIKE :search OR o.deliveryAddress LIKE :search)");
         if (vendor != null)   hql.append(" AND o.restaurant.id = :vendor");
         if (courier != null)  hql.append(" AND o.courierId = :courier");
@@ -100,7 +100,7 @@ public class AdminHandler implements HttpHandler {
         if (status != null)     hql.append(" AND o.status = :status");
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Order> queryObj = session.createQuery(hql.toString(), Order.class);
+            Query<entity.Order> queryObj = session.createQuery(hql.toString(), entity.Order.class);
             if (search != null)     queryObj.setParameter("search", "%" + search + "%");
             if (vendor != null)   queryObj.setParameter("vendor", Integer.parseInt(vendor));
             if (courier != null)  queryObj.setParameter("courier", Integer.parseInt(courier));

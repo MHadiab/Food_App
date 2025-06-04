@@ -41,7 +41,11 @@ public class OrderResponse {
         this.courier_id=order.getCourierId();
         this.status=order.getStatus();
         this.createdAt=order.getCreatedAt().toString();
-        this.updatedAt=order.getUpdatedAt().toString();
+        if (order.getUpdatedAt() != null) {
+            this.updatedAt=order.getUpdatedAt().toString();
+        }else {
+            this.updatedAt=null;
+        }
     }
 
 }

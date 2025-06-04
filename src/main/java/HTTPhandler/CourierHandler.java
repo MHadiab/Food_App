@@ -44,7 +44,7 @@ public class CourierHandler implements HttpHandler {
         } else if ("PATCH".equalsIgnoreCase(method) && path.matches("^/deliveries/\\d+$")) {
             handleChangeStatus(ex);
         } else if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/history")) {
-            handleGetHistory(ex);
+//            handleGetHistory(ex);
         } else {
             ex.sendResponseHeaders(404, -1);
         }
@@ -54,16 +54,16 @@ public class CourierHandler implements HttpHandler {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
         if(ErrorHandler.FindError(ex,token)) return;
-        if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token)) ) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
-            return;
-        }
+//        if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token)) ) {
+//            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
+//            return;
+//        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Order> orders = session.createQuery(
                             "from Order o where o.status = :status",
                             Order.class
                     )
-                    .setParameter("status", OrderStatus.SUBMITTED)
+                    .setParameter("status", OrderStatus.FINDING_COURIER)
                     .list();
             List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
                     .collect(Collectors.toList());
@@ -115,11 +115,6 @@ public class CourierHandler implements HttpHandler {
             OrderStatus current = order.getStatus();
             boolean validTransition = false;
             switch (current) {
-                case WAITING_VENDOR:
-                    if (requestedStatus == OrderStatus.FINDING_COURIER) {
-                        validTransition = true;
-                    }
-                    break;
                 case FINDING_COURIER:
                     if (requestedStatus == OrderStatus.ON_THE_WAY) {
                         validTransition = true;
@@ -137,7 +132,6 @@ public class CourierHandler implements HttpHandler {
                 JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
                 return;
             }
-
             if (requestedStatus == OrderStatus.FINDING_COURIER) {
                 if (order.getCourierId() != null) {
                     JsonHelper.sendJson(ex, 409, new MessageResponse("Conflict occurred"));
@@ -161,36 +155,36 @@ public class CourierHandler implements HttpHandler {
         }
     }
 
-    private void handleGetHistory(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if(ErrorHandler.FindError(ex,token)) return;
-        String queryStr = ex.getRequestURI().getQuery();            // e.g. "search=123&vendor=Foo&user=45"
-        Map<String, String> params = splitQuery.splitQuery(queryStr);         // به Map تبدیل می‌کند
-        String search = params.get("search");                      // ممکن است null باشد
-        String vendor = params.get("vendor");                      // ممکن است null باشد
-        String userId = params.get("user");
-
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            StringBuilder hql = new StringBuilder("from Order o where o.status != 'pending'");
-            if (search != null) hql.append(" and str(o.id) like :search");
-            if (vendor != null) hql.append(" and o.restaurant.name = :vendor");
-            if (userId != null) hql.append(" and o.user.id = :userId");
-            Query<Order> q = session.createQuery(hql.toString(), Order.class);
-            if (search != null) q.setParameter("search", "%" + search + "%");
-            if (vendor != null) q.setParameter("vendor", vendor);
-            if (userId != null) q.setParameter("userId", Long.valueOf(userId));
-
-            List<Order> orders = q.list();
-            List<OrderResponse> resp = orders.stream()
-                    .map(OrderResponse::new)
-                    .collect(Collectors.toList());
-            JsonHelper.sendJson(ex, 200, resp);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
-        }
-
-    }
+//    private void handleGetHistory(HttpExchange ex) throws IOException {
+//        String auth = ex.getRequestHeaders().getFirst("Authorization");
+//        String token = auth.substring(7);
+//        if(ErrorHandler.FindError(ex,token)) return;
+//        String queryStr = ex.getRequestURI().getQuery();            // e.g. "search=123&vendor=Foo&user=45"
+//        Map<String, String> params = splitQuery.splitQuery(queryStr);         // به Map تبدیل می‌کند
+//        String search = params.get("search");                      // ممکن است null باشد
+//        String vendor = params.get("vendor");                      // ممکن است null باشد
+//        String userId = params.get("user");
+//
+//        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+//            StringBuilder hql = new StringBuilder("from Order o where o.courierId = '' ");
+//            if (search != null) hql.append(" and str(o.id) like :search");
+//            if (vendor != null) hql.append(" and o.restaurant.name = :vendor");
+//            if (userId != null) hql.append(" and o.user.id = :userId");
+//            Query<Order> q = session.createQuery(hql.toString(), Order.class);
+//            if (search != null) q.setParameter("search", "%" + search + "%");
+//            if (vendor != null) q.setParameter("vendor", vendor);
+//            if (userId != null) q.setParameter("userId", Long.valueOf(userId));
+//
+//            List<Order> orders = q.list();
+//            List<OrderResponse> resp = orders.stream()
+//                    .map(OrderResponse::new)
+//                    .collect(Collectors.toList());
+//            JsonHelper.sendJson(ex, 200, resp);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
+//        }
+//
+//    }
 }

@@ -152,13 +152,13 @@ public class HttpUserHandler implements HttpHandler {
                 return;
             }
             Role role = user.getRole();
-            if (role == Role.SELLER || role == Role.COURIER) {
-                if (user.getStatus() != UserStatus.APPROVED) {
-                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-                    return;
-                }
-            }
-            if(user.getStatus() == UserStatus.REJECTED && user.getRole() == Role.BUYER) {
+//            if (role == Role.SELLER || role == Role.COURIER) {
+//                if (user.getStatus() != UserStatus.APPROVED) {
+//                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+//                    return;
+//                }
+//            }
+            if(user.getStatus() == UserStatus.REJECTED) {
                 JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
             }
             String token = JwtUtil.generateToken(user);

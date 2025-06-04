@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.CreateOrderRequest;
-import dto.PaymentRequest;
+import dto.OrderItemDTO;
 import entity.*;
 import io.jsonwebtoken.io.IOException;
 import org.hibernate.Session;
@@ -19,6 +19,7 @@ import util.JsonHelper;
 import util.JwtUtil;
 
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,9 +31,9 @@ public class BuyerHandler implements HttpHandler {
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
-
     @Override
     public void handle(HttpExchange ex) throws IOException, java.io.IOException {
+
         String method = ex.getRequestMethod();
         String path = ex.getRequestURI().getPath();
         if ("POST".equalsIgnoreCase(method) && path.equals("/orders")) {
@@ -230,6 +231,7 @@ public class BuyerHandler implements HttpHandler {
     private void handleCreateOrder(HttpExchange ex) throws java.io.IOException {
         String auth=ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
+
         if(ErrorHandler.FindError(ex,token)) return;
         if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
             JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
@@ -239,34 +241,70 @@ public class BuyerHandler implements HttpHandler {
         if(req.getVendor_id()==null){
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid vendor_id"));return;
         }
-        if(req.getItems().isEmpty()){
+        if(req.getItems() == null || req.getItems().isEmpty()){
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid items"));return;
         }
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Restaurant restaurant=session.get(Restaurant.class,session.get(Restaurant.class,req.getVendor_id()));
+            org.hibernate.Transaction tx = session.beginTransaction();
+
+            Restaurant restaurant=session.get(Restaurant.class,req.getVendor_id());
             if(restaurant==null){
                 JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid vendor_id"));return;
             }
+
             User user = session.get(User.class,JwtUtil.getUserIdFromToken(token));
-            org.hibernate.Transaction tx = session.beginTransaction();
+
+            List<OrderItem> orderItems = new ArrayList<>();
+            double totalRawPrice = 0.0;
+
+            for (OrderItemDTO dto : req.getItems()) {
+                if (dto.getItem_id() == null) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Each item must have a non-null item_id"));
+                    return;
+                }
+                if (dto.getQuantity() == null || dto.getQuantity() <= 0) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse(
+                            "For item_id=" + dto.getItem_id() + ", quantity must be a positive number"
+                    ));
+                    return;
+                }
+                Integer itemId = dto.getItem_id();
+                FoodItem foodItem = session.get(FoodItem.class, itemId);
+                if (foodItem == null) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse(
+                            "Invalid item_id: " + itemId + " does not exist in FoodItem"
+                    ));
+                    return;
+                }
+                double unitPrice = foodItem.getPrice(); // در صورت BigDecimal: foodItem.getPrice().doubleValue()
+                int qty = dto.getQuantity();
+                totalRawPrice += unitPrice * qty;
+                orderItems.add(new OrderItem(itemId, qty));
+            }
             Order order = new Order();
-                order.setDeliveryAddress(user.getAddress());
-                order.setUser(user);
-                order.setRestaurant(restaurant);
-                List<OrderItem> orderItems = req.getItems()
-                        .stream()
-                        .map(dto -> new OrderItem(
-                                dto.getItem_id(),
-                                dto.getQuantity()
-                        ))
-                        .collect(Collectors.toList());
-                order.setItems(orderItems);
-                order.setRawPrice(0);
-                order.setTaxFee(0);
-                order.setAdditionalFee(0);
-                order.setCourierFee(0);
-                order.setPayPrice(0);   //این قسمت بعدا باید تکمیل شود
-                order.setCreatedAt(LocalDateTime.now());
+            order.setDeliveryAddress(user.getAddress());
+            order.setUser(user);
+            order.setRestaurant(restaurant);
+
+            order.setItems(orderItems);
+            order.setRawPrice((int) totalRawPrice);
+
+            order.setTaxFee(restaurant.getTax_fee());
+            order.setAdditionalFee(restaurant.getAdditional_fee());
+            order.setCourierFee(0);
+
+            order.setPayPrice((int) totalRawPrice + restaurant.getTax_fee() + restaurant.getAdditional_fee());
+
+            order.setStatus(OrderStatus.SUBMITTED);
+            order.setCreatedAt(LocalDateTime.now());
+            session.persist(order);
+            tx.commit();
+            OrderResponse resp = new OrderResponse(order);
+            JsonHelper.sendJson(ex, 200, resp);
+
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex,500, new ErrorResponse("Internal Server Error"));
         }
     }
 }
