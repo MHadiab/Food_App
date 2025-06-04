@@ -5,28 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Merge_at_28-May-25_5_17_PM_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Merge_at_28-May-25_5_17_PM__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Order.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Order.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/OrderResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/OrderResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler$1.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/CourierHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Main.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/entity/Order.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/Order.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/entity/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/User.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/RestaurantListResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/RestaurantListResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.txt" beforeDir="false" afterPath="$PROJECT_DIR$/test.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -157,6 +139,7 @@
       <workItem from="1749036130576" duration="3286000" />
       <workItem from="1749039473776" duration="4149000" />
       <workItem from="1749043691240" duration="1157000" />
+      <workItem from="1749049559190" duration="5249000" />
     </task>
     <servers />
   </component>

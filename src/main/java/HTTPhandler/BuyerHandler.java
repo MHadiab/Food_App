@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.CreateOrderRequest;
 import dto.OrderItemDTO;
+import dto.RateRequest;
 import entity.*;
 import io.jsonwebtoken.io.IOException;
 import org.hibernate.Session;
@@ -66,8 +67,97 @@ public class BuyerHandler implements HttpHandler {
             long vendor_id = Long.parseLong(idStr);
             handleDeleteFavorite(ex,vendor_id);return;
         }
+        if("POST".equalsIgnoreCase(method) && path.equals("/rating")) {
+            handleCreateRate(ex);return;
+        }
+        if("GET".equalsIgnoreCase(method) && path.matches("^/ratings/items/\\d+$")) {
+            String[] parts = path.split("/");
+            if (parts.length != 4) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+            }
+            String itemId = parts[3];
+            handleGetRateOfItem(ex,itemId); return;
+        }
     }
 
+    private void handleGetRateOfItem(HttpExchange ex, String itemId) throws java.io.IOException {
+        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String token=auth.substring(7);
+        if (ErrorHandler.FindError(ex,token)) return;
+        StringBuilder hql=new StringBuilder("SELECT r FROM Rating r JOIN r.itemIds i WHERE i = :id");
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            FoodItem foodItem = session.get(FoodItem.class, Long.parseLong(itemId));
+            if (foodItem == null){
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+            }
+            Query<entity.Rating> reviews = session.createQuery(hql.toString(), entity.Rating.class);
+            reviews.setParameter("id", Long.parseLong(itemId));
+            long total=0;
+            double average;
+            List<RateResponse>  comments = reviews.stream()
+                    .map(RateResponse::new)
+                    .toList();
+            for (RateResponse r : comments) {
+                total+=r.getRating();
+            }
+            average= (double) total /comments.size();
+            Map<Double, List<RateResponse>> response = Map.of(
+                    average, comments
+            );
+            JsonHelper.sendJson(ex, 200, response);
+        }catch (IOException e){
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));return;
+        }
+
+    }
+    private void handleCreateRate(HttpExchange ex) throws java.io.IOException {
+        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String token=auth.substring(7);
+        if(ErrorHandler.FindError(ex,token)) return;
+        String userId=JwtUtil.getUserIdFromToken(token);
+        if(!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("BUYER")) {
+            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));return;
+        }
+        RateRequest req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), UTF_8), RateRequest.class);
+        if (req == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid request"));return;
+        }
+        if(req.getRating() == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid rating"));return;
+        }
+        if (req.getOrder_id()==null){
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid order_id"));return;
+        }
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            User user = (User) session.get(User.class, userId);
+            Order order = (Order) session.get(Order.class, req.getOrder_id());
+            if(order==null) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid order_id"));return;
+            }
+            if(order.getUser()!=user){
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));return;
+            }
+            Rating rating = new Rating();
+                rating.setOrder(order);
+                rating.setRestaurant_id(order.getRestaurant().getId());
+                rating.setUser_id(user.getUser_id());
+                rating.setRating(req.getRating());
+                rating.setComment(req.getComment());
+                rating.setImageBase64(new ArrayList<>(req.getImageBase64()));
+                rating.setCreated_at(LocalDateTime.now());
+                for(OrderItem orderItem : order.getItems()) {
+                    Integer itemId=orderItem.getItemId();
+                    rating.getItemIds().add(itemId);
+                }
+                JsonHelper.sendJson(ex, 200, new MessageResponse("Rating submitted"));
+        }catch(Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));return;
+        }
+
+    }
     private void handleDeleteFavorite(HttpExchange ex, long vendorId) throws java.io.IOException {
         String auth=ex.getRequestHeaders().getFirst("Authorization");
         String token=auth.substring(7);
