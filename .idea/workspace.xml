@@ -4,13 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="Merge remote-tracking branch 'origin/develop2' into abolfazl&#10;&#10;# Conflicts:&#10;#&#9;.idea/dataSources.local.xml&#10;#&#9;.idea/dataSources.xml&#10;#&#9;.idea/workspace.xml&#10;#&#9;food-app.iml&#10;#&#9;src/main/java/Main.java&#10;#&#9;target/classes/HTTPhandler/HttpUserHandler.class&#10;#&#9;target/classes/HTTPhandler/OrderHandler.class&#10;#&#9;target/classes/Main.class&#10;#&#9;target/classes/dto/UserInfo.class&#10;#&#9;target/classes/entity/Order.class&#10;#&#9;target/classes/hibernate.cfg.xml&#10;#&#9;target/classes/util/HibernateUtil.class">
-      <change afterPath="$PROJECT_DIR$/src/main/java/dto/ItemFilterRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dto/VendorFilterRequest.java" afterDir="false" />
+    <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="کامل شدن چهار دستور بایر در بایر هندلر و تغیر در پرتاب اکسپشن متد ها با اد کردن پکیج">
+      <change afterPath="$PROJECT_DIR$/src/main/java/dto/CouponRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/entity/Coupon.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/entity/CouponType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/response/CouponResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Merge_at_28-May-25_5_17_PM_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Merge_at_28-May-25_5_17_PM__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Restaurant.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Restaurant.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/RestaurantResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/RestaurantResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -149,7 +151,10 @@
       <workItem from="1748940908780" duration="1081000" />
       <workItem from="1748945266974" duration="412000" />
       <workItem from="1748945690532" duration="2176000" />
-      <workItem from="1749022772243" duration="8206000" />
+      <workItem from="1749022772243" duration="10316000" />
+      <workItem from="1749072203306" duration="4217000" />
+      <workItem from="1749078755245" duration="474000" />
+      <workItem from="1749079243136" duration="962000" />
     </task>
     <task id="LOCAL-00001" summary="Merge remote-tracking branch 'origin/develop2' into abolfazl&#10;&#10;# Conflicts:&#10;#&#9;.idea/dataSources.local.xml&#10;#&#9;.idea/dataSources.xml&#10;#&#9;.idea/workspace.xml&#10;#&#9;food-app.iml&#10;#&#9;src/main/java/Main.java&#10;#&#9;target/classes/HTTPhandler/HttpUserHandler.class&#10;#&#9;target/classes/HTTPhandler/OrderHandler.class&#10;#&#9;target/classes/Main.class&#10;#&#9;target/classes/dto/UserInfo.class&#10;#&#9;target/classes/entity/Order.class&#10;#&#9;target/classes/hibernate.cfg.xml&#10;#&#9;target/classes/util/HibernateUtil.class">
       <option name="closed" value="true" />
@@ -159,7 +164,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748518519313</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="کامل شدن چهار دستور بایر در بایر هندلر و تغیر در پرتاب اکسپشن متد ها با اد کردن پکیج">
+      <option name="closed" value="true" />
+      <created>1749042071726</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1749042071726</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -167,6 +180,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Merge remote-tracking branch 'origin/develop2' into abolfazl&#10;&#10;# Conflicts:&#10;#&#9;.idea/dataSources.local.xml&#10;#&#9;.idea/dataSources.xml&#10;#&#9;.idea/workspace.xml&#10;#&#9;food-app.iml&#10;#&#9;src/main/java/Main.java&#10;#&#9;target/classes/HTTPhandler/HttpUserHandler.class&#10;#&#9;target/classes/HTTPhandler/OrderHandler.class&#10;#&#9;target/classes/Main.class&#10;#&#9;target/classes/dto/UserInfo.class&#10;#&#9;target/classes/entity/Order.class&#10;#&#9;target/classes/hibernate.cfg.xml&#10;#&#9;target/classes/util/HibernateUtil.class" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/develop2' into abolfazl&#10;&#10;# Conflicts:&#10;#&#9;.idea/dataSources.local.xml&#10;#&#9;.idea/dataSources.xml&#10;#&#9;.idea/workspace.xml&#10;#&#9;food-app.iml&#10;#&#9;src/main/java/Main.java&#10;#&#9;target/classes/HTTPhandler/HttpUserHandler.class&#10;#&#9;target/classes/HTTPhandler/OrderHandler.class&#10;#&#9;target/classes/Main.class&#10;#&#9;target/classes/dto/UserInfo.class&#10;#&#9;target/classes/entity/Order.class&#10;#&#9;target/classes/hibernate.cfg.xml&#10;#&#9;target/classes/util/HibernateUtil.class" />
+    <MESSAGE value="کامل شدن چهار دستور بایر در بایر هندلر و تغیر در پرتاب اکسپشن متد ها با اد کردن پکیج" />
+    <option name="LAST_COMMIT_MESSAGE" value="کامل شدن چهار دستور بایر در بایر هندلر و تغیر در پرتاب اکسپشن متد ها با اد کردن پکیج" />
   </component>
 </project>
