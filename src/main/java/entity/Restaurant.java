@@ -12,7 +12,7 @@ public class Restaurant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false)
     private String name;
@@ -34,5 +34,8 @@ public class Restaurant {
 
     @Column(nullable = false)
     private long seller_id;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean active = true;   // برای رستوارن اکتیو گذاشتم میتونیم برش داریم در صورت استفاده نشدن
 
 }

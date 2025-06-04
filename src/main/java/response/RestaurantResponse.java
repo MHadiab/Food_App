@@ -7,7 +7,7 @@ import entity.Restaurant;
 @Getter
 @Setter
 public class RestaurantResponse {
-    private Long id;
+    private Integer id;
     private String name;
     private String address;
     private String phone;
