@@ -32,41 +32,51 @@ public class AdminHandler implements HttpHandler {
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
+
     @Override
     public void handle(HttpExchange ex) throws IOException {   //  تنها تغیری که توی کد های هادی دادم عوض کردن پرتاب اکسپشن برای متد ها بود
         String method = ex.getRequestMethod();
         String path = ex.getRequestURI().getPath();
         if (method.equalsIgnoreCase("GET") && path.equals("/admin/users")) {
-            handleGetUsers(ex); return;
+            handleGetUsers(ex);
+            return;
         }
         if ("PATCH".equalsIgnoreCase(method) && path.matches("^/admin/users/\\d+/status$")) {
             String[] parts = path.split("/");
             String idStr = parts[3];
             long userId = Long.parseLong(idStr);
-            handleUpdateUserStatus(ex, String.valueOf(userId)); return;
+            handleUpdateUserStatus(ex, String.valueOf(userId));
+            return;
         }
         if ("GET".equalsIgnoreCase(method) && path.equals("/admin/orders")) {
-            handleGetOrders(ex); return;
+            handleGetOrders(ex);
+            return;
         }
         if ("GET".equalsIgnoreCase(method) && path.equals("/admin/transactions")) {
-            handleGetTransactions(ex); return;
+            handleGetTransactions(ex);
+            return;
         }
 
         // 5 دستور آخر ادمین برای من
         if ("POST".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
-            handleCreateCoupon(ex); return;
+            handleCreateCoupon(ex);
+            return;
         }
         if ("GET".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
-            handleListCoupons(ex); return;
+            handleListCoupons(ex);
+            return;
         }
         if ("GET".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleGetCouponDetails(ex); return;
+            handleGetCouponDetails(ex);
+            return;
         }
         if ("PUT".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleUpdateCoupon(ex); return;
+            handleUpdateCoupon(ex);
+            return;
         }
         if ("DELETE".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleDeleteCoupon(ex); return;
+            handleDeleteCoupon(ex);
+            return;
         }
 
         ex.sendResponseHeaders(404, -1);
@@ -78,7 +88,7 @@ public class AdminHandler implements HttpHandler {
         String search = params.get("search");
         String user = params.get("user");
         String method = params.get("method");
-        String status=params.get("status");
+        String status = params.get("status");
         StringBuilder hql = new StringBuilder("FROM transactions t WHERE 1=1");
         if (search != null) hql.append(" AND cast(t.id as string) LIKE :search");
         if (user != null) hql.append(" AND t.user.id = :userId");
@@ -103,28 +113,28 @@ public class AdminHandler implements HttpHandler {
     }
 
     private void handleGetOrders(HttpExchange ex) throws IOException {
-        String query=ex.getRequestURI().getQuery();
-        Map<String,String> params = splitQuery.splitQuery(query);
+        String query = ex.getRequestURI().getQuery();
+        Map<String, String> params = splitQuery.splitQuery(query);
         String search = params.get("search");
         String vendor = params.get("vendor");
         String courier = params.get("courier");
         String customer = params.get("customer");
         String status = params.get("status");
 
-        StringBuilder hql = new StringBuilder("From order o WHERE 1=1");
+        StringBuilder hql = new StringBuilder("From Order o WHERE 1=1");
         if (search != null) hql.append(" AND (cast(o.id as string) LIKE :search OR o.deliveryAddress LIKE :search)");
-        if (vendor != null)   hql.append(" AND o.restaurant.id = :vendor");
-        if (courier != null)  hql.append(" AND o.courierId = :courier");
-        if (customer != null)   hql.append(" AND o.user.id = :customer");
-        if (status != null)     hql.append(" AND o.status = :status");
+        if (vendor != null) hql.append(" AND o.restaurant.id = :vendor");
+        if (courier != null) hql.append(" AND o.courierId = :courier");
+        if (customer != null) hql.append(" AND o.user.id = :customer");
+        if (status != null) hql.append(" AND o.status = :status");
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Order> queryObj = session.createQuery(hql.toString(), Order.class);
-            if (search != null)     queryObj.setParameter("search", "%" + search + "%");
-            if (vendor != null)   queryObj.setParameter("vendor", Integer.parseInt(vendor));
-            if (courier != null)  queryObj.setParameter("courier", Integer.parseInt(courier));
-            if (customer != null)   queryObj.setParameter("customer", Integer.parseInt(customer));
-            if (status != null)     queryObj.setParameter("status", OrderStatus.valueOf(status.toUpperCase()));
+            Query<entity.Order> queryObj = session.createQuery(hql.toString(), entity.Order.class);
+            if (search != null) queryObj.setParameter("search", "%" + search + "%");
+            if (vendor != null) queryObj.setParameter("vendor", Integer.parseInt(vendor));
+            if (courier != null) queryObj.setParameter("courier", Integer.parseInt(courier));
+            if (customer != null) queryObj.setParameter("customer", Integer.parseInt(customer));
+            if (status != null) queryObj.setParameter("status", OrderStatus.valueOf(status.toUpperCase()));
 
             List<Order> orders = queryObj.list();
 
@@ -143,9 +153,9 @@ public class AdminHandler implements HttpHandler {
         long userId = Long.parseLong(path);
         UserStatusRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
-                 UserStatusRequest.class
+                UserStatusRequest.class
         );
-        if (req == null || req.getStatus()==null || (!req.getStatus().equalsIgnoreCase(String.valueOf(UserStatus.APPROVED))&& !req.getStatus().equalsIgnoreCase(UserStatus.REJECTED.name()))) {
+        if (req == null || req.getStatus() == null || (!req.getStatus().equalsIgnoreCase(String.valueOf(UserStatus.APPROVED)) && !req.getStatus().equalsIgnoreCase(UserStatus.REJECTED.name()))) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid status"));
             return;
         }
@@ -176,21 +186,21 @@ public class AdminHandler implements HttpHandler {
     }
 
     private void handleGetUsers(HttpExchange ex) throws IOException {
-        String auth=ex.getRequestHeaders().getFirst("Authorization");
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
-        if(ErrorHandler.FindError(ex,token)) return;
-        if(!Objects.equals(JwtUtil.getRoleFromToken(token), Role.ADMIN.name())) {
+        if (ErrorHandler.FindError(ex, token)) return;
+        if (!Objects.equals(JwtUtil.getRoleFromToken(token), Role.ADMIN.name())) {
             JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
             return;
         }
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<User> users = session
                     .createQuery("FROM User", User.class)
                     .list();
-            List<UserInfo> rep =users.stream().map(UserInfo :: new)
+            List<UserInfo> rep = users.stream().map(UserInfo::new)
                     .toList();
             JsonHelper.sendJson(ex, 200, rep);
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
@@ -271,7 +281,7 @@ public class AdminHandler implements HttpHandler {
             existingCouponQuery.setParameter("code", req.getCouponCode());
             if (existingCouponQuery.uniqueResult() > 0) {
                 JsonHelper.sendJson(ex, 409, new MessageResponse("Conflict: Coupon code already exists."));
-                if(tx.isActive()) tx.rollback();
+                if (tx.isActive()) tx.rollback();
                 return;
             }
 
@@ -284,7 +294,7 @@ public class AdminHandler implements HttpHandler {
             coupon.setUserCount(req.getUserCount());
             coupon.setStartDate(startDate);
             coupon.setEndDate(endDate);
-             coupon.setActive(true); // فیلد اکتیو رو همین طوری گذاشتم میتونیم بعدا برش داریم
+            coupon.setActive(true); // فیلد اکتیو رو همین طوری گذاشتم میتونیم بعدا برش داریم
 
             session.persist(coupon);
             tx.commit();
@@ -406,7 +416,7 @@ public class AdminHandler implements HttpHandler {
             Coupon coupon = session.get(Coupon.class, couponId);
             if (coupon == null) {  // کوپنی با این ایدی نداشتیم
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon not found."));
-                if(tx.isActive()) tx.rollback();
+                if (tx.isActive()) tx.rollback();
                 return;
             }
 
@@ -419,7 +429,7 @@ public class AdminHandler implements HttpHandler {
                     existingCouponQuery.setParameter("currentId", couponId);
                     if (existingCouponQuery.uniqueResult() > 0) {
                         JsonHelper.sendJson(ex, 409, new MessageResponse("Conflict: New coupon code already exists."));
-                        if(tx.isActive()) tx.rollback();
+                        if (tx.isActive()) tx.rollback();
                         return;
                     }
                 }
@@ -430,7 +440,7 @@ public class AdminHandler implements HttpHandler {
                     coupon.setType(CouponType.valueOf(req.getType().toUpperCase()));
                 } catch (IllegalArgumentException e) {
                     JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid coupon type for update."));
-                    if(tx.isActive()) tx.rollback();
+                    if (tx.isActive()) tx.rollback();
                     return;
                 }
             }
@@ -439,12 +449,22 @@ public class AdminHandler implements HttpHandler {
             if (req.getUserCount() != null) coupon.setUserCount(req.getUserCount());
             LocalDate newStartDate = null, newEndDate = null;
             if (req.getStartDate() != null && !req.getStartDate().trim().isEmpty()) {
-                try { newStartDate = LocalDate.parse(req.getStartDate()); }
-                catch (DateTimeParseException e) { JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid start date format for update. Use YYYY-MM-DD.")); if(tx.isActive()) tx.rollback(); return; }
+                try {
+                    newStartDate = LocalDate.parse(req.getStartDate());
+                } catch (DateTimeParseException e) {
+                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid start date format for update. Use YYYY-MM-DD."));
+                    if (tx.isActive()) tx.rollback();
+                    return;
+                }
             }
             if (req.getEndDate() != null && !req.getEndDate().trim().isEmpty()) {
-                try { newEndDate = LocalDate.parse(req.getEndDate()); }
-                catch (DateTimeParseException e) { JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid end date format for update. Use YYYY-MM-DD.")); if(tx.isActive()) tx.rollback(); return; }
+                try {
+                    newEndDate = LocalDate.parse(req.getEndDate());
+                } catch (DateTimeParseException e) {
+                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid end date format for update. Use YYYY-MM-DD."));
+                    if (tx.isActive()) tx.rollback();
+                    return;
+                }
             }
 
             LocalDate effectiveStartDate = newStartDate != null ? newStartDate : coupon.getStartDate();
@@ -452,7 +472,7 @@ public class AdminHandler implements HttpHandler {
 
             if (effectiveEndDate.isBefore(effectiveStartDate)) {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("End date cannot be before start date."));
-                if(tx.isActive()) tx.rollback();
+                if (tx.isActive()) tx.rollback();
                 return;
             }
             if (newStartDate != null) coupon.setStartDate(newStartDate);
@@ -468,7 +488,7 @@ public class AdminHandler implements HttpHandler {
             // فیلد های این بخش میتونن دقیق تر هم بررسی شن و توی یه if نباشن
             if (valueToCheck <= 0 || (typeToCheck == CouponType.PERCENT && valueToCheck > 100) || minPriceToCheck < 0 || userCountToCheck < 0) {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid numeric values for coupon (value, minPrice, userCount) during update. Percent value should be between 0 and 100."));
-                if(tx.isActive()) tx.rollback();
+                if (tx.isActive()) tx.rollback();
                 return;
             }
 
@@ -517,7 +537,7 @@ public class AdminHandler implements HttpHandler {
             Coupon coupon = session.get(Coupon.class, couponId);
             if (coupon == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon not found."));
-                if(tx.isActive()) tx.rollback();
+                if (tx.isActive()) tx.rollback();
                 return;
             }
             session.remove(coupon);

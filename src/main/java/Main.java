@@ -11,29 +11,16 @@ import java.net.InetSocketAddress;
 public class Main {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+
         server.createContext("/auth", new HttpUserHandler());
-//
-        server.createContext("/restaurants",      new HttpRestaurantHandler());
-
-
-//
-//        server.createContext("/deliveries",       new CourierHandler());
-////        server.createContext("/vendors",          new BuyerHandler());
-////        server.createContext("/cart",             new BuyerHandler());
-//
-        server.createContext("/orders",           new OrderHandler());
+        server.createContext("/restaurants",      new RestaurantDispatcher());
+        server.createContext("/orders",           new BuyerHandler());
         server.createContext("/transactions",     new OrderHandler());
         server.createContext("/payment/online",   new OrderHandler());
         server.createContext("/wallet/top-up",   new OrderHandler());
-
-//
-        server.createContext("/admin/users",          new AdminHandler());
-        server.createContext("/admin/users/",         new AdminHandler());
-        server.createContext("/admin/orders",         new AdminHandler());
-//        server.createContext("/admin/deliveries",     new AdminHandler());
-        server.createContext("/admin/transactions",   new AdminHandler());
-//        server.createContext("/admin/discounts",      new AdminHandler());
-//        server.createContext("/admin/reports",        new AdminHandler());
+        server.createContext("/admin",          new AdminHandler());
+        server.createContext("/favorites",     new BuyerHandler());
+        server.createContext("/deliveries", new CourierHandler());
 
         server.start();
         System.out.println("Server listening on 8080");

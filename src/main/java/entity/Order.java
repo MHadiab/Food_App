@@ -41,7 +41,7 @@ public class Order {
     private int payPrice;
 
     @Column(nullable = true)
-    private Integer courierId;
+    private Integer courierId=0;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

@@ -1,11 +1,105 @@
-ali-buyer:eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IkJVWUVSIiwiZnVsbE5hbWUiOiJhbGkiLCJpYXQiOjE3NDg3ODU4OTMsImV4cCI6MTc0ODc5NjY5M30.alMllBADoVm9MygZ10WC5RffFvGqs1_1SfMQCk2dLeQ   - id : 2
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IkJVWUVSIiwiZnVsbE5hbWUiOiJhbGkiLCJpYXQiOjE3NDg5NjMzNTEsImV4cCI6MTc0ODk3NDE1MX0.8-czL6auMyaRIEav1cyFHQycDKRfG5oJXizpT-_qi3U
+
+admin :  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IkFETUlOIiwiZnVsbE5hbWUiOiJhZG1pbiIsImlhdCI6MTc0ODg2MzU1MywiZXhwIjoxNzQ4ODc0MzUzfQ.MgstTTRYrmqxkdTmLEcpkxdQsDVjF6IAq7UzNV50UQk
 
 
-admin :  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IkFETUlOIiwiZnVsbE5hbWUiOiJhZG1pbiIsImlhdCI6MTc0ODc4NTkyOSwiZXhwIjoxNzQ4Nzk2NzI5fQ.TflSfN_3cmUCqkLkH59fpWYFpjhfl2Kx-QFYGC8kcfY
-
-
-reza-seller :  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlNFTExFUiIsImZ1bGxOYW1lIjoic3RyaW5nIiwiaWF0IjoxNzQ4Nzg1OTg4LCJleHAiOjE3NDg3OTY3ODh9.ZYMuaXn6X6SdNWQuE8Hhywh987G4NKaTNHG19S7a4Eo    id:3   phone string1
+reza-seller :  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlNFTExFUiIsImZ1bGxOYW1lIjoicmV6YSIsImlhdCI6MTc0ODk2MzQxMCwiZXhwIjoxNzQ4OTc0MjEwfQ.K9ERqCflALfcTbJlz_ZEs86Cm89vPAw_najqRvZcphc    id:3   phone string1
 
 
 
 
+
+تو ثبت سفارش فیلد آیتم چک نمیشه
+مشکل پارامتر سرچ ها
+تطابق پارامتر های کویری با فیلد ها
+ترتیب authorization
+
+
+چک کردن هویت ادمین در دستوراتش
+و فایند ارور
+وضعیت تاریخجه گرفتن پیک
+
+
+
+[
+    {
+        "id": 1,
+        "delivery_address": "string",
+        "customer_id": 2,
+        "vendor_id": 1,
+        "items": [
+            {
+                "itemId": 1,
+                "quantity": 4
+            }
+        ],
+        "raw_price": 0,
+        "tax_fee": 0,
+        "additional_fee": 0,
+        "courier_fee": 0,
+        "pay_price": 0,
+        "courier_id": 0,
+        "status": "WAITING_VENDOR",
+        "createdAt": "2025-06-03T19:09:43.864"
+    },
+    {
+        "id": 2,
+        "delivery_address": "string",
+        "customer_id": 2,
+        "vendor_id": 1,
+        "items": [
+            {
+                "itemId": 1,
+                "quantity": 4
+            }
+        ],
+        "raw_price": 0,
+        "tax_fee": 0,
+        "additional_fee": 0,
+        "courier_fee": 0,
+        "pay_price": 0,
+        "courier_id": 0,
+        "status": "SUBMITTED",
+        "createdAt": "2025-06-03T19:09:45.995"
+    },
+    {
+        "id": 3,
+        "delivery_address": "string",
+        "customer_id": 2,
+        "vendor_id": 1,
+        "items": [
+            {
+                "itemId": 1,
+                "quantity": 2
+            }
+        ],
+        "raw_price": 0,
+        "tax_fee": 0,
+        "additional_fee": 0,
+        "courier_fee": 0,
+        "pay_price": 0,
+        "courier_id": 0,
+        "status": "SUBMITTED",
+        "createdAt": "2025-06-03T19:11:01.314"
+    },
+    {
+        "id": 4,
+        "delivery_address": "string",
+        "customer_id": 2,
+        "vendor_id": 1,
+        "items": [
+            {
+                "itemId": 1,
+                "quantity": 2
+            }
+        ],
+        "raw_price": 0,
+        "tax_fee": 0,
+        "additional_fee": 0,
+        "courier_fee": 0,
+        "pay_price": 0,
+        "courier_id": 0,
+        "status": "SUBMITTED",
+        "createdAt": "2025-06-03T19:14:50.751"
+    }
+]
