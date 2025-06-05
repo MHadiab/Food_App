@@ -8,7 +8,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.*;
 import entity.*;
+
 import java.io.IOException;
+
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -106,6 +108,24 @@ public class BuyerHandler implements HttpHandler {
             handleGetItemDetails(ex);
             return;
         }
+        // دستور بررسی اعتبار کوپن
+        if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
+            handleCheckCouponValidity(ex);
+        }
+
+        // سه دستور اخر بایر برای من
+        if ("GET".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+            handleGetRatingDetails(ex);
+            return;
+        }
+        if ("DELETE".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+            handleDeleteRating(ex);
+            return;
+        }
+        if ("PUT".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+            handleUpdateRating(ex);
+            return;
+        }
     }
 
     private void handleGetRateOfItem(HttpExchange ex, String itemId) throws java.io.IOException {
@@ -140,10 +160,6 @@ public class BuyerHandler implements HttpHandler {
             return;
         }
 
-        if ("GET".equalsIgnoreCase(method) && path.matches("/vendors/\\d+")) {}
-
-        if ("POST".equalsIgnoreCase(method) && path.equals("/orders")) {
-            handleCreateOrder(ex);
     }
 
     private void handleCreateRate(HttpExchange ex) throws java.io.IOException {
@@ -169,9 +185,7 @@ public class BuyerHandler implements HttpHandler {
             return;
         }
 
-        // دستور بررسی اعتبار کوپن
-        if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
-            handleCheckCouponValidity(ex);
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
             User user = (User) session.get(User.class, userId);
@@ -767,6 +781,180 @@ public class BuyerHandler implements HttpHandler {
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while checking coupon validity."));
+        }
+    }
+
+    private void handleGetRatingDetails(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        String role = JwtUtil.getRoleFromToken(token);
+        if (role == null || !role.equalsIgnoreCase("BUYER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can access ratings."));
+            return;
+        }
+
+        String[] parts = ex.getRequestURI().getPath().split("/");
+        Long ratingId;
+        try {
+            ratingId = Long.parseLong(parts[2]);  // استخراج ایدی نمره دهی
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            return;
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Rating rating = session.get(Rating.class, ratingId);
+
+            if (rating == null) {  //  نمره دهی با این ایدی پیدا نشد
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+                return;
+            }
+
+            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));  // ایدی کسی که این نظر رو ثبت کرده
+            if (!rating.getUser_id().equals(userIdFromToken)) {  // این ایدی با ایدی کسی که نظر رو ثبت کرده یکی نیست
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                return;
+            }
+
+            JsonHelper.sendJson(ex, 200, new RatingDetailResponse(rating));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while fetching rating."));
+        }
+    }
+
+
+    private void handleDeleteRating(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        String role = JwtUtil.getRoleFromToken(token);
+        if (role == null || !role.equalsIgnoreCase("BUYER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can delete ratings."));
+            return;
+        }
+
+        String[] parts = ex.getRequestURI().getPath().split("/");
+        Long ratingId;
+        try {
+            ratingId = Long.parseLong(parts[2]);
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            return;
+        }
+
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Rating rating = session.get(Rating.class, ratingId);
+
+            if (rating == null) {  //  نمره دهی با این ایدی پیدا نشد
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+                if (tx.isActive()) tx.rollback();
+                return;
+            }
+
+            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));
+            if (!rating.getUser_id().equals(userIdFromToken)) {
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                if (tx.isActive()) tx.rollback();
+                return;
+            }
+
+            session.remove(rating);
+            tx.commit();
+            JsonHelper.sendJson(ex, 200, new MessageResponse("Rating deleted successfully."));
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while deleting rating."));
+        }
+    }
+
+    private void handleUpdateRating(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        String role = JwtUtil.getRoleFromToken(token);
+        if (role == null || !role.equalsIgnoreCase("BUYER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can update ratings."));
+            return;
+        }
+
+        String[] parts = ex.getRequestURI().getPath().split("/");
+        Long ratingId;
+        try {
+            ratingId = Long.parseLong(parts[2]);
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            return;
+        }
+
+        RatingUpdateRequest req;
+        try {
+            req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8), RatingUpdateRequest.class);
+            if (req == null) {
+                JsonHelper.sendJson(ex, 400, new MessageResponse("Request body is empty or malformed."));
+                return;
+            }
+        } catch (Exception e) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid request body format."));
+            return;
+        }
+
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Rating rating = session.get(Rating.class, ratingId);
+
+            if (rating == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+                if (tx.isActive()) tx.rollback();
+                return;
+            }
+
+            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));
+            if (!rating.getUser_id().equals(userIdFromToken)) {
+                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                if (tx.isActive()) tx.rollback();
+                return;
+            }
+
+            // این بخش بعدا میتنه بهتر بشه فعلا همین طوری یه بررسی ساده انجام دادم
+            if (req.getRating() != null) {
+                if (req.getRating() >= 1 && req.getRating() <= 5) {
+                    rating.setRating(req.getRating());
+                } else {
+                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating value. Must be between 1 and 5."));
+                    if (tx.isActive()) tx.rollback();
+                    return;
+                }
+            }
+            if (req.getComment() != null) {
+                rating.setComment(req.getComment());
+            }
+            if (req.getImageBase64() != null) {
+                rating.setImageBase64(req.getImageBase64());
+            }
+
+            session.merge(rating);
+            tx.commit();
+            JsonHelper.sendJson(ex, 200, new RatingDetailResponse(rating));
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while updating rating."));
         }
     }
 }

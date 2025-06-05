@@ -16,6 +16,7 @@ public class RateResponse {
     private ArrayList<String> imageBase64;
     private Long user_id;
     private LocalDateTime created_at;
+
     public RateResponse(Rating rating) {
         this.rating = rating.getRating();
         if (rating.getComment() != null) {
