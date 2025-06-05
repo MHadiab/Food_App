@@ -20,8 +20,11 @@ import util.ErrorHandler;
 import util.HibernateUtil;
 import util.JsonHelper;
 import util.JwtUtil;
+
+import javax.sound.midi.MidiFileFormat;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,6 +62,8 @@ public class BuyerHandler implements HttpHandler {
         }
         //  تا اینجا دستور های جدید من
 
+        if ("GET".equalsIgnoreCase(method) && path.matches("/vendors/\\d+")) {}
+
         if ("POST".equalsIgnoreCase(method) && path.equals("/orders")) {
             handleCreateOrder(ex);
             return;
@@ -67,8 +72,10 @@ public class BuyerHandler implements HttpHandler {
             handleGetOrderDetail(ex);
             return;
         }
-        if ("GET".equalsIgnoreCase(method) && path.equals("/orders/history")) {
-            handleOrderHistory(ex);
+
+        // دستور بررسی اعتبار کوپن
+        if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
+            handleCheckCouponValidity(ex);
             return;
         }
     }
@@ -468,7 +475,67 @@ public class BuyerHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 500, new MessageResponse("Error fetching item details: " + e.getMessage()));
         }
     }
+
+    private void handleCheckCouponValidity(HttpExchange ex) throws IOException {
+        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String token = auth.substring(7);
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        String role = JwtUtil.getRoleFromToken(token);
+        if (role == null || !role.equalsIgnoreCase("BUYER")) {
+            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can check coupon validity."));
+            return;
+        }
+
+        Map<String, String> queryParams = splitQuery(ex.getRequestURI().getQuery());
+        String couponCode = queryParams != null ? queryParams.get("coupon_code") : null;
+
+        if (couponCode == null || couponCode.trim().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required query parameter: coupon_code."));
+            return;
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            Query<Coupon> query = session.createQuery("FROM Coupon c WHERE c.couponCode = :code", Coupon.class);
+            query.setParameter("code", couponCode.trim());
+            Coupon coupon = query.uniqueResult();
+
+            //   بررسی پیدا شدن کوپن
+            if (coupon == null) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon not found."));
+                return;
+            }
+
+            //  بررسی شرایط اعتبار کوپن
+            LocalDate today = LocalDate.now();
+            if (!coupon.isActive()) {  // کوپن هنوز موجوده یا نه
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon is not active."));
+                return;
+            }
+            if (today.isBefore(coupon.getStartDate())) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon is not yet valid. It starts on " + coupon.getStartDate() + "."));
+                return;
+            }
+            if (today.isAfter(coupon.getEndDate())) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon has expired."));
+                return;
+            }
+            if (coupon.getTimesUsed() != null && coupon.getUserCount() != null && coupon.getTimesUsed() >= coupon.getUserCount()) {
+                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon has reached its usage limit."));
+                return;
+            }
+
+            // اگر تمام بررسی‌ها موفقیت‌آمیز بود، کوپن معتبر است
+            JsonHelper.sendJson(ex, 200, new CouponResponse(coupon));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while checking coupon validity."));
+        }
+    }
 }
+
 
 
 

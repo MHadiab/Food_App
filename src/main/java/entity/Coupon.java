@@ -41,5 +41,22 @@ public class Coupon {
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active = true; // فیلد اضافه برای کنترل کردن فعال بودن یا نبودن کوپن ها
 
+    @Column(name = "times_used", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer timesUsed = 0; // تعداد دفعاتی که این کوپن استفاده شده
+
+
+    // این متد رو باید وقتی سفارشی با استفاده از کوپن با موفقیت کامل شد صدا بزنی
+    public void incrementTimesUsed() {
+        if (this.timesUsed == null) {
+            this.timesUsed = 0;
+        }
+        this.timesUsed++;
+
+        //  اگر به حد استفاده رسید غیرفعالش میکنیم
+        if (this.timesUsed >= this.userCount) {
+            this.active = false;
+        }
+    }
+
     public Coupon() {}
 }
