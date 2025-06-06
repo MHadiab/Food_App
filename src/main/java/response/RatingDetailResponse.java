@@ -17,7 +17,7 @@ public class RatingDetailResponse {
     private Long userId;
     private Integer rating;
     private String comment;
-    private List<Integer> itemIds;
+    private List<Long> itemIds;
     private List<String> imageBase64;
     private String createdAt;
 

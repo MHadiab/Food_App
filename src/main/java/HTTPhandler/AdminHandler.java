@@ -89,7 +89,7 @@ public class AdminHandler implements HttpHandler {
         String user = params.get("user");
         String method = params.get("method");
         String status = params.get("status");
-        StringBuilder hql = new StringBuilder("FROM transactions t WHERE 1=1");
+        StringBuilder hql = new StringBuilder("FROM Transaction t WHERE 1=1");
         if (search != null) hql.append(" AND cast(t.id as string) LIKE :search");
         if (user != null) hql.append(" AND t.user.id = :userId");
         if (method != null) hql.append(" AND t.method = :method");

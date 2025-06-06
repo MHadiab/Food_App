@@ -1,5 +1,6 @@
 package dto;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,5 +12,7 @@ public class RateRequest {
     private Long order_id;
     private Integer rating;
     private String comment;
-    private ArrayList<String> imageBase64;
+
+    @SerializedName("imageBase64")
+    private ArrayList<String> imageBase64 = new ArrayList<>();
 }

@@ -216,7 +216,7 @@ public class HttpMenuHandler implements HttpHandler {
             }
 
             // بررسی وجود این ایتم در همین رستوران
-            if (!foodItem.getRestaurant().getId().equals(restaurantId)) {
+            if (!foodItem.getRestaurant().getId().toString().equals(restaurantId.toString())) {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: Food item does not belong to this restaurant."));
                 return;
             }

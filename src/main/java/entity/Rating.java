@@ -18,8 +18,8 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "order_id", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @Column(nullable = false)
@@ -37,12 +37,14 @@ public class Rating {
     @ElementCollection
     @CollectionTable(name = "rated_item_ids", joinColumns = @JoinColumn(name = "rating_id"))
     @Column(name = "item_id")
-    private List<Integer> itemIds = new ArrayList<>();
+    private List<Long> itemIds = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "image", joinColumns = @JoinColumn(name = "rating_id"))
-    @Column(name = "imageBase64" , nullable = true)
+    @Column(name = "imageBase64", nullable = true)
     private List<String> imageBase64 = new ArrayList<>();
+
+
 
     private LocalDateTime created_at;
 

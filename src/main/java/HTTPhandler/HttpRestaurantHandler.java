@@ -38,10 +38,12 @@ public class HttpRestaurantHandler implements HttpHandler {
 
         try {
             if ("/restaurants".equals(path) && "POST".equalsIgnoreCase(method)) {
-                handleCreateRestaurant(ex); return;
+                handleCreateRestaurant(ex);
+                return;
             }
             if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
-                handleGetMyRestaurants(ex); return;
+                handleGetMyRestaurants(ex);
+                return;
             }
             if (path.matches("/restaurants/\\d+")) {
                 if ("PUT".equalsIgnoreCase(method)) {
@@ -51,24 +53,28 @@ public class HttpRestaurantHandler implements HttpHandler {
                 }
                 return;
             }
-            if("GET".equalsIgnoreCase(method) && path.matches("^/restaurants/\\d+/orders$")) {
+            if ("GET".equalsIgnoreCase(method) && path.matches("^/restaurants/\\d+/orders$")) {
                 String[] parts = path.split("/");
-                if (parts.length !=4) {
-                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+                if (parts.length != 4) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+                    return;
                 }
                 String idStr = parts[2];
                 long vendor_id = Long.parseLong(idStr);
-                handleGetOrders(ex,vendor_id); return;
+                handleGetOrders(ex, vendor_id);
+                return;
             }
             if ("PATCH".equalsIgnoreCase(method) && path.matches("^/restaurants/orders/\\d+$")) {
                 System.out.println("hi");
                 String[] parts = path.split("/");
                 if (parts.length != 4) {
-                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+                    return;
                 }
                 String idStr = parts[3];
                 long vendor_id = Long.parseLong(idStr);
-                handleOrderStatus(ex,vendor_id);return;
+                handleOrderStatus(ex, vendor_id);
+                return;
 
             }
             ex.sendResponseHeaders(404, -1);
@@ -81,8 +87,8 @@ public class HttpRestaurantHandler implements HttpHandler {
     private void handleOrderStatus(HttpExchange ex, long orderId) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
-        if(ErrorHandler.FindError(ex,token)) return;
-        if(!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("SELLER")) {
+        if (ErrorHandler.FindError(ex, token)) return;
+        if (!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("SELLER")) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
         }
         String[] parts = ex.getRequestURI().getPath().split("/");
@@ -117,13 +123,13 @@ public class HttpRestaurantHandler implements HttpHandler {
             switch (current) {
                 case SUBMITTED:
                     if (requestedStatus == OrderStatus.UNPAID_AND_CANCELLED ||
-                    requestedStatus == OrderStatus.WAITING_VENDOR) {
+                            requestedStatus == OrderStatus.WAITING_VENDOR) {
                         validTransition = true;
                     }
                     break;
                 case WAITING_VENDOR:
                     if (requestedStatus == OrderStatus.FINDING_COURIER ||
-                    requestedStatus == OrderStatus.CANCELLED) {
+                            requestedStatus == OrderStatus.CANCELLED) {
                         validTransition = true;
                     }
                     break;
@@ -144,12 +150,12 @@ public class HttpRestaurantHandler implements HttpHandler {
         }
     }
 
-    private void handleGetOrders(HttpExchange ex,long id) throws IOException {
+    private void handleGetOrders(HttpExchange ex, long id) throws IOException {
 
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         String token = auth.substring(7);
-        ErrorHandler.FindError(ex,token);
-        if(!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("SELLER")) {
+        ErrorHandler.FindError(ex, token);
+        if (!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("SELLER")) {
             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
         }
         String query = ex.getRequestURI().getQuery();
@@ -191,15 +197,17 @@ public class HttpRestaurantHandler implements HttpHandler {
             hql.append(" AND o.courierId = :courier");
         }
 
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Restaurant restaurant = session.get(Restaurant.class, id);
-            String seller=JwtUtil.getUserIdFromToken(token);
+            String seller = JwtUtil.getUserIdFromToken(token);
             if (restaurant == null) {
-                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));return;
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
+                return;
             }
             assert seller != null;
-            if(restaurant.getSeller_id()!=Long.parseLong(seller)) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Forbidden request"));return;
+            if (restaurant.getSeller_id() != Long.parseLong(seller)) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Forbidden request"));
+                return;
             }
             Query<entity.Order> o = session.createQuery(hql.toString(), entity.Order.class);
             o.setParameter("restaurantId", id);
@@ -208,11 +216,11 @@ public class HttpRestaurantHandler implements HttpHandler {
             if (user != null) o.setParameter("user", user);
             if (courier != null) o.setParameter("courier", courier);
             List<entity.Order> orders = o.list();
-            List<OrderResponse> resp=orders.stream().map(OrderResponse::new).toList();
-            JsonHelper.sendJson(ex,200,resp);
+            List<OrderResponse> resp = orders.stream().map(OrderResponse::new).toList();
+            JsonHelper.sendJson(ex, 200, resp);
         } catch (IOException e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex,500,new ErrorResponse("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 

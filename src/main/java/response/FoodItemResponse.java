@@ -29,7 +29,7 @@ public class FoodItemResponse {
         this.keywords = foodItem.getKeywords() != null ?
                 new java.util.ArrayList<>(foodItem.getKeywords()) : null;
         if (foodItem.getRestaurant() != null) {
-            this.vendorId = foodItem.getRestaurant().getId();
+            this.vendorId = Long.valueOf(foodItem.getRestaurant().getId());
         }
     }
 }

@@ -74,25 +74,27 @@ public class HttpUserHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
             return;
         }
-
-        // 4. چک فیلدهای ضروری
-        System.out.println(req.getPassword());
-        System.out.println(req.getRole());
-        System.out.println(req.getAddress());
-        if (req.getFull_name() == null || req.getPhone() == null
-                || req.getPassword() == null || req.getRole() == null
-                || req.getAddress() == null) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required fields"));
-            return;
-        }
         if (ErrorHandler.RateLackToken(ex)) return;
-        if (req.getFull_name() == null || req.getPhone() == null ||
-                req.getPassword() == null || req.getRole() == null ||
-                req.getAddress() == null) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
+        if (req.getFull_name() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid full_name"));
             return;
         }
-
+        if (req.getPhone() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid phone"));
+            return;
+        }
+        if (req.getPassword() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid password"));
+            return;
+        }
+        if (req.getAddress() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid address"));
+            return;
+        }
+        if (req.getRole() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid role"));
+            return;
+        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
 
@@ -108,28 +110,23 @@ public class HttpUserHandler implements HttpHandler {
                 JsonHelper.sendJson(ex, 409, new MessageResponse("Phone number already exists"));
                 return;
             }
-
             User user = new User();
             user.setFull_name(req.getFull_name());
             user.setPhone(req.getPhone());
             user.setEmail(req.getEmail());
-            user.setPassword(req.getPassword()); // در عمل هش کن
+            user.setPassword(req.getPassword());
             user.setRole(Role.valueOf(req.getRole().toUpperCase()));
             user.setAddress(req.getAddress());
             user.setBank_info(req.getBank_info());
-
             session.persist(user);
             tx.commit();
-
             String token = JwtUtil.generateToken(user);
-
             RegisterResponse resp = new RegisterResponse(
                     "User registered successfully",
                     user.getUser_id().toString(),
                     token
             );
             JsonHelper.sendJson(ex, 200, resp);
-
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
@@ -141,14 +138,26 @@ public class HttpUserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 LoginRequest.class
         );
+        if (req == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
+            return;
+        }
+        if (req.getPhone() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid phone"));
+            return;
+        }
+        if (req.getPassword() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid password"));
+            return;
+        }
         if (ErrorHandler.RateLackToken(ex)) return;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.createQuery(
                             "from User where phone = :phone", User.class)
                     .setParameter("phone", req.getPhone())
                     .uniqueResult();
-            if (user == null || !user.getPassword().equals(req.getPassword())) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+            if (user == null) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON body"));
                 return;
             }
             Role role = user.getRole();
@@ -158,11 +167,10 @@ public class HttpUserHandler implements HttpHandler {
 //                    return;
 //                }
 //            }
-            if(user.getStatus() == UserStatus.REJECTED) {
+            if (user.getStatus() == UserStatus.REJECTED) {
                 JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
             }
             String token = JwtUtil.generateToken(user);
-
             UserInfo info = new UserInfo(
                     user.getUser_id().toString(),
                     user.getFull_name(),
@@ -186,7 +194,13 @@ public class HttpUserHandler implements HttpHandler {
     }
 
     private void handleGetProfile(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String auth;
+        try {
+            auth = ex.getRequestHeaders().getFirst("Authorization");
+        } catch (Exception e) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
         String token = auth.substring(7);
         if (ErrorHandler.FindError(ex, token)) return;
         String userId = JwtUtil.getUserIdFromToken(token);
@@ -202,7 +216,13 @@ public class HttpUserHandler implements HttpHandler {
     }
 
     private void handleEditProfile(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String auth;
+        try {
+            auth = ex.getRequestHeaders().getFirst("Authorization");
+        } catch (Exception e) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
         String token = auth.substring(7);
         if (ErrorHandler.FindError(ex, token)) return;
         String userId = JwtUtil.getUserIdFromToken(token);
@@ -210,11 +230,16 @@ public class HttpUserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 EditProfileRequest.class
         );
+        if (req == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
+            return;
+        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
+            assert userId != null;
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("User not found"));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
                 return;
             }
             if (req.getFull_name() != null) user.setFull_name(req.getFull_name());
@@ -224,19 +249,25 @@ public class HttpUserHandler implements HttpHandler {
             if (req.getBank_info() != null) user.setBank_info(req.getBank_info());
             session.merge(user);
             tx.commit();
-            JsonHelper.sendJson(ex, 200, new MessageResponse("Profile updated successfully"));
+            JsonHelper.sendJson(ex, 200, new ErrorResponse("Profile updated successfully"));
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
     private void handleLogout(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
+        String auth;
+        try {
+            auth = ex.getRequestHeaders().getFirst("Authorization");
+        } catch (Exception e) {
+            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            return;
+        }
         String token = auth.substring(7);
         if (ErrorHandler.FindError(ex, token)) return;
         TokenBlacklist.blacklistToken(token);
-        JsonHelper.sendJson(ex, 200, new MessageResponse("User logged out successfully"));
+        JsonHelper.sendJson(ex, 200, new ErrorResponse("User logged out successfully"));
     }
 }
 

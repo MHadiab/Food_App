@@ -1,0 +1,516 @@
+Index: src/main/java/HTTPhandler/HttpRestaurantHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package HTTPhandler;\r\n\r\nimport com.google.gson.FieldNamingPolicy;\r\nimport com.google.gson.Gson;\r\nimport com.google.gson.GsonBuilder;\r\nimport com.sun.net.httpserver.HttpExchange;\r\nimport com.sun.net.httpserver.HttpHandler;\r\nimport dto.ChangeStatusRequest;\r\nimport dto.ResChangeStatus;\r\nimport entity.*;\r\nimport org.hibernate.Session;\r\nimport org.hibernate.Transaction;\r\nimport org.hibernate.query.Query;\r\nimport response.*;\r\nimport util.*;\r\n\r\nimport java.io.IOException;\r\nimport java.io.InputStreamReader;\r\nimport java.nio.charset.StandardCharsets;\r\nimport java.util.List;\r\nimport java.util.Locale;\r\nimport java.util.Map;\r\nimport java.util.Objects;\r\nimport java.util.stream.Collectors;\r\n\r\nimport dto.RestaurantRequest;\r\n\r\npublic class HttpRestaurantHandler implements HttpHandler {\r\n\r\n    private static final Gson GSON = new GsonBuilder()\r\n            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)\r\n            .create();\r\n\r\n    @Override\r\n    public void handle(HttpExchange ex) throws IOException {\r\n        String path = ex.getRequestURI().getPath();\r\n        String method = ex.getRequestMethod();\r\n\r\n        try {\r\n            if (\"/restaurants\".equals(path) && \"POST\".equalsIgnoreCase(method)) {\r\n                handleCreateRestaurant(ex); return;\r\n            }\r\n            if (\"/restaurants/mine\".equals(path) && \"GET\".equalsIgnoreCase(method)) {\r\n                handleGetMyRestaurants(ex); return;\r\n            }\r\n            if (path.matches(\"/restaurants/\\\\d+\")) {\r\n                if (\"PUT\".equalsIgnoreCase(method)) {\r\n                    handleUpdateRestaurant(ex);\r\n                } else {\r\n                    ex.sendResponseHeaders(405, -1);\r\n                }\r\n                return;\r\n            }\r\n            if(\"GET\".equalsIgnoreCase(method) && path.matches(\"^/restaurants/\\\\d+/orders$\")) {\r\n                String[] parts = path.split(\"/\");\r\n                if (parts.length !=4) {\r\n                    JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Invalid input\"));return;\r\n                }\r\n                String idStr = parts[2];\r\n                long vendor_id = Long.parseLong(idStr);\r\n                handleGetOrders(ex,vendor_id); return;\r\n            }\r\n            if (\"PATCH\".equalsIgnoreCase(method) && path.matches(\"^/restaurants/orders/\\\\d+$\")) {\r\n                System.out.println(\"hi\");\r\n                String[] parts = path.split(\"/\");\r\n                if (parts.length != 4) {\r\n                    JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Invalid input\"));return;\r\n                }\r\n                String idStr = parts[3];\r\n                long vendor_id = Long.parseLong(idStr);\r\n                handleOrderStatus(ex,vendor_id);return;\r\n\r\n            }\r\n            ex.sendResponseHeaders(404, -1);\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\")); // مشکل سرور\r\n        }\r\n    }\r\n\r\n    private void handleOrderStatus(HttpExchange ex, long orderId) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth.substring(7);\r\n        if(ErrorHandler.FindError(ex,token)) return;\r\n        if(!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase(\"SELLER\")) {\r\n            JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden request\"));\r\n        }\r\n        String[] parts = ex.getRequestURI().getPath().split(\"/\");\r\n        if (parts.length < 3) {\r\n            JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Invalid delivery ID\"));\r\n            return;\r\n        }\r\n        ResChangeStatus req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                ResChangeStatus.class\r\n        );\r\n        if (req.getStatus() == null) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Invalid status\"));\r\n            return;\r\n        }\r\n        OrderStatus requestedStatus;\r\n        try {\r\n            requestedStatus = OrderStatus.valueOf(req.getStatus().toUpperCase(Locale.ROOT));\r\n        } catch (IllegalArgumentException e) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Invalid status value\"));\r\n            return;\r\n        }\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n            Order order = session.get(Order.class, orderId);\r\n            if (order == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"Order not found\"));\r\n                return;\r\n            }\r\n            OrderStatus current = order.getStatus();\r\n            boolean validTransition = false;\r\n            switch (current) {\r\n                case SUBMITTED:\r\n                    if (requestedStatus == OrderStatus.UNPAID_AND_CANCELLED ||\r\n                    requestedStatus == OrderStatus.WAITING_VENDOR) {\r\n                        validTransition = true;\r\n                    }\r\n                    break;\r\n                case WAITING_VENDOR:\r\n                    if (requestedStatus == OrderStatus.FINDING_COURIER ||\r\n                    requestedStatus == OrderStatus.CANCELLED) {\r\n                        validTransition = true;\r\n                    }\r\n                    break;\r\n                default:\r\n                    validTransition = false;\r\n            }\r\n            if (!validTransition) {\r\n                JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden request\"));\r\n                return;\r\n            }\r\n            order.setStatus(requestedStatus);\r\n            session.merge(order);\r\n            tx.commit();\r\n            JsonHelper.sendJson(ex, 200, new MessageResponse(\"Order status changed successfully\"));\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleGetOrders(HttpExchange ex,long id) throws IOException {\r\n\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth.substring(7);\r\n        ErrorHandler.FindError(ex,token);\r\n        if(!JwtUtil.getRoleFromToken(token).equalsIgnoreCase(\"SELLER\")) {\r\n            JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden request\"));\r\n        }\r\n        String query = ex.getRequestURI().getQuery();\r\n        Map<String, String> params = splitQuery.splitQuery(query);\r\n        String search = params.get(\"search\");\r\n        String status = params.get(\"status\");\r\n        String user = params.get(\"user\");\r\n        String courier = params.get(\"courier\");\r\n        OrderStatus statusEnum = null;\r\n        if (status != null && !status.isBlank()) {\r\n            try {\r\n                statusEnum = OrderStatus.valueOf(status.trim().toUpperCase());\r\n            } catch (IllegalArgumentException e) {\r\n                JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Invalid status value: \" + status));\r\n                return;\r\n            }\r\n        }\r\n        StringBuilder hql = new StringBuilder();\r\n        hql.append(\"SELECT DISTINCT o\")\r\n                .append(\" FROM Order o\")\r\n                .append(\" JOIN o.items oi\")\r\n                .append(\" JOIN FoodItem fi ON fi.id = oi.itemId\")\r\n                .append(\" JOIN fi.keywords kw\");\r\n        if (user != null && !user.isBlank()) {\r\n            hql.append(\" JOIN o.user u\");                       // اتصال به User\r\n        }\r\n        hql.append(\" WHERE o.restaurant.id = :restaurantId\");\r\n\r\n        if (search != null && !search.isBlank()) {\r\n            hql.append(\" AND (cast(oi.itemId as string) LIKE :search OR kw LIKE :search)\");\r\n        }\r\n        if (status != null && !status.isBlank()) {\r\n            hql.append(\" AND o.status = :status\");\r\n        }\r\n        if (user != null && !user.isBlank()) {\r\n            hql.append(\" AND (cast(u.id as string) LIKE :user OR u.full_name LIKE :user)\");\r\n        }\r\n        if (courier != null && !courier.isBlank()) {\r\n            hql.append(\" AND o.courierId = :courier\");\r\n        }\r\n\r\n        try(Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Restaurant restaurant = session.get(Restaurant.class, id);\r\n            String seller=JwtUtil.getUserIdFromToken(token);\r\n            if (restaurant == null) {\r\n                JsonHelper.sendJson(ex, 404, new ErrorResponse(\"Resource not found\"));return;\r\n            }\r\n            assert seller != null;\r\n            if(restaurant.getSeller_id()!=Long.parseLong(seller)) {\r\n                JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Forbidden request\"));return;\r\n            }\r\n            Query<entity.Order> o = session.createQuery(hql.toString(), entity.Order.class);\r\n            o.setParameter(\"restaurantId\", id);\r\n            if (search != null) o.setParameter(\"search\", search);\r\n            if (status != null) o.setParameter(\"status\", statusEnum);\r\n            if (user != null) o.setParameter(\"user\", user);\r\n            if (courier != null) o.setParameter(\"courier\", courier);\r\n            List<entity.Order> orders = o.list();\r\n            List<OrderResponse> resp=orders.stream().map(OrderResponse::new).toList();\r\n            JsonHelper.sendJson(ex,200,resp);\r\n        } catch (IOException e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex,500,new ErrorResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleCreateRestaurant(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth != null ? auth.substring(7) : null;\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n\r\n        String userRole = JwtUtil.getRoleFromToken(token);\r\n        if (userRole == null || !userRole.equals(Role.SELLER.name())) {\r\n            JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden: Only sellers can create restaurants\"));\r\n            return;\r\n        }\r\n\r\n        RestaurantRequest req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                RestaurantRequest.class\r\n        );\r\n\r\n        if (req.getName() == null || req.getAddress() == null || req.getPhone() == null) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Invalid `field name`\"));\r\n            return;\r\n        }\r\n\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n\r\n            User user = session.get(User.class, Long.valueOf(JwtUtil.getUserIdFromToken(token))); // دریافت کاربر از توکن\r\n\r\n            Restaurant restaurant = new Restaurant();\r\n            restaurant.setName(req.getName());\r\n            restaurant.setAddress(req.getAddress());\r\n            restaurant.setPhone(req.getPhone());\r\n            restaurant.setLogoBase64(req.getLogoBase64());\r\n            restaurant.setTax_fee(req.getTax_fee() != null ? req.getTax_fee() : 0); // Default value\r\n            restaurant.setAdditional_fee(req.getAdditional_fee() != null ? req.getAdditional_fee() : 0); // Default value\r\n            restaurant.setSeller_id(user.getUser_id()); // ثبت شناسه فروشنده\r\n\r\n            session.persist(restaurant);\r\n            tx.commit();\r\n\r\n            RestaurantResponse response = new RestaurantResponse(restaurant);\r\n            JsonHelper.sendJson(ex, 200, response); //  ارسال رستوران ایجاد شده به پاسخ\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleGetMyRestaurants(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth != null ? auth.substring(7) : null;\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n\r\n        String userRole = JwtUtil.getRoleFromToken(token);\r\n        if (userRole == null || !userRole.equals(Role.SELLER.name())) {\r\n            JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden: Only sellers can view their restaurants\"));\r\n            return;\r\n        }\r\n\r\n        String userId = JwtUtil.getUserIdFromToken(token); // Get user ID from token\r\n\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            User user = session.get(User.class, Long.valueOf(userId));\r\n            if (user == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"Resource not found\"));\r\n                return;\r\n            }\r\n\r\n            List<Restaurant> restaurants = session.createQuery(\r\n                            \"from Restaurant where seller_id = :sellerId\", Restaurant.class)\r\n                    .setParameter(\"sellerId\", user.getUser_id())\r\n                    .list();\r\n\r\n            List<RestaurantResponse> restaurantResponses = restaurants.stream()\r\n                    .map(RestaurantResponse::new)\r\n                    .collect(Collectors.toList());\r\n\r\n            RestaurantListResponse response = new RestaurantListResponse(restaurantResponses);\r\n            JsonHelper.sendJson(ex, 200, response);\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleUpdateRestaurant(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth != null ? auth.substring(7) : null;\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n\r\n        String userRole = JwtUtil.getRoleFromToken(token);\r\n        if (userRole == null || !userRole.equals(Role.SELLER.name())) {\r\n            JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden: Only sellers can update restaurants\"));\r\n            return;\r\n        }\r\n\r\n        String path = ex.getRequestURI().getPath();\r\n        String[] pathParts = path.split(\"/\");\r\n        Long restaurantId = Long.parseLong(pathParts[2]); // Assuming /restaurants/{id}\r\n\r\n        RestaurantRequest req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                RestaurantRequest.class\r\n        );\r\n\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n\r\n            String userId = JwtUtil.getUserIdFromToken(token);\r\n            User user = session.get(User.class, Long.valueOf(userId));\r\n            if (user == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"Resource not found\"));\r\n                return;\r\n            }\r\n\r\n            Restaurant restaurant = session.get(Restaurant.class, restaurantId);\r\n            if (restaurant == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"Resource not found\"));\r\n                return;\r\n            }\r\n\r\n            // اطمینان از اینکه فرد دارای این رستوران باشد\r\n            if (!user.getUser_id().equals(restaurant.getSeller_id())) {\r\n                JsonHelper.sendJson(ex, 403, new MessageResponse(\"Forbidden request\"));\r\n                return;\r\n            }\r\n\r\n            if (req.getName() != null) restaurant.setName(req.getName());\r\n            if (req.getAddress() != null) restaurant.setAddress(req.getAddress());\r\n            if (req.getPhone() != null) restaurant.setPhone(req.getPhone());\r\n            if (req.getLogoBase64() != null) restaurant.setLogoBase64(req.getLogoBase64());\r\n            if (req.getTax_fee() != null) restaurant.setTax_fee(req.getTax_fee());\r\n            if (req.getAdditional_fee() != null) restaurant.setAdditional_fee(req.getAdditional_fee());\r\n\r\n            session.merge(restaurant);\r\n            tx.commit();\r\n\r\n            RestaurantResponse response = new RestaurantResponse(restaurant);\r\n            JsonHelper.sendJson(ex, 200, response); // Send the updated restaurant\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/main/java/HTTPhandler/HttpRestaurantHandler.java b/src/main/java/HTTPhandler/HttpRestaurantHandler.java
+--- a/src/main/java/HTTPhandler/HttpRestaurantHandler.java	(revision 5d5c33ad7ff3f8f7b68c707c9ff039349c561316)
++++ b/src/main/java/HTTPhandler/HttpRestaurantHandler.java	(date 1749150905829)
+@@ -38,10 +38,12 @@
+ 
+         try {
+             if ("/restaurants".equals(path) && "POST".equalsIgnoreCase(method)) {
+-                handleCreateRestaurant(ex); return;
++                handleCreateRestaurant(ex);
++                return;
+             }
+             if ("/restaurants/mine".equals(path) && "GET".equalsIgnoreCase(method)) {
+-                handleGetMyRestaurants(ex); return;
++                handleGetMyRestaurants(ex);
++                return;
+             }
+             if (path.matches("/restaurants/\\d+")) {
+                 if ("PUT".equalsIgnoreCase(method)) {
+@@ -51,24 +53,28 @@
+                 }
+                 return;
+             }
+-            if("GET".equalsIgnoreCase(method) && path.matches("^/restaurants/\\d+/orders$")) {
++            if ("GET".equalsIgnoreCase(method) && path.matches("^/restaurants/\\d+/orders$")) {
+                 String[] parts = path.split("/");
+-                if (parts.length !=4) {
+-                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
++                if (parts.length != 4) {
++                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
++                    return;
+                 }
+                 String idStr = parts[2];
+                 long vendor_id = Long.parseLong(idStr);
+-                handleGetOrders(ex,vendor_id); return;
++                handleGetOrders(ex, vendor_id);
++                return;
+             }
+             if ("PATCH".equalsIgnoreCase(method) && path.matches("^/restaurants/orders/\\d+$")) {
+                 System.out.println("hi");
+                 String[] parts = path.split("/");
+                 if (parts.length != 4) {
+-                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));return;
++                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
++                    return;
+                 }
+                 String idStr = parts[3];
+                 long vendor_id = Long.parseLong(idStr);
+-                handleOrderStatus(ex,vendor_id);return;
++                handleOrderStatus(ex, vendor_id);
++                return;
+ 
+             }
+             ex.sendResponseHeaders(404, -1);
+@@ -81,8 +87,8 @@
+     private void handleOrderStatus(HttpExchange ex, long orderId) throws IOException {
+         String auth = ex.getRequestHeaders().getFirst("Authorization");
+         String token = auth.substring(7);
+-        if(ErrorHandler.FindError(ex,token)) return;
+-        if(!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("SELLER")) {
++        if (ErrorHandler.FindError(ex, token)) return;
++        if (!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("SELLER")) {
+             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+         }
+         String[] parts = ex.getRequestURI().getPath().split("/");
+@@ -117,13 +123,13 @@
+             switch (current) {
+                 case SUBMITTED:
+                     if (requestedStatus == OrderStatus.UNPAID_AND_CANCELLED ||
+-                    requestedStatus == OrderStatus.WAITING_VENDOR) {
++                            requestedStatus == OrderStatus.WAITING_VENDOR) {
+                         validTransition = true;
+                     }
+                     break;
+                 case WAITING_VENDOR:
+                     if (requestedStatus == OrderStatus.FINDING_COURIER ||
+-                    requestedStatus == OrderStatus.CANCELLED) {
++                            requestedStatus == OrderStatus.CANCELLED) {
+                         validTransition = true;
+                     }
+                     break;
+@@ -144,12 +150,12 @@
+         }
+     }
+ 
+-    private void handleGetOrders(HttpExchange ex,long id) throws IOException {
++    private void handleGetOrders(HttpExchange ex, long id) throws IOException {
+ 
+         String auth = ex.getRequestHeaders().getFirst("Authorization");
+         String token = auth.substring(7);
+-        ErrorHandler.FindError(ex,token);
+-        if(!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("SELLER")) {
++        ErrorHandler.FindError(ex, token);
++        if (!JwtUtil.getRoleFromToken(token).equalsIgnoreCase("SELLER")) {
+             JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+         }
+         String query = ex.getRequestURI().getQuery();
+@@ -191,15 +197,17 @@
+             hql.append(" AND o.courierId = :courier");
+         }
+ 
+-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
++        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+             Restaurant restaurant = session.get(Restaurant.class, id);
+-            String seller=JwtUtil.getUserIdFromToken(token);
++            String seller = JwtUtil.getUserIdFromToken(token);
+             if (restaurant == null) {
+-                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));return;
++                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
++                return;
+             }
+             assert seller != null;
+-            if(restaurant.getSeller_id()!=Long.parseLong(seller)) {
+-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Forbidden request"));return;
++            if (restaurant.getSeller_id() != Long.parseLong(seller)) {
++                JsonHelper.sendJson(ex, 400, new ErrorResponse("Forbidden request"));
++                return;
+             }
+             Query<entity.Order> o = session.createQuery(hql.toString(), entity.Order.class);
+             o.setParameter("restaurantId", id);
+@@ -208,11 +216,11 @@
+             if (user != null) o.setParameter("user", user);
+             if (courier != null) o.setParameter("courier", courier);
+             List<entity.Order> orders = o.list();
+-            List<OrderResponse> resp=orders.stream().map(OrderResponse::new).toList();
+-            JsonHelper.sendJson(ex,200,resp);
++            List<OrderResponse> resp = orders.stream().map(OrderResponse::new).toList();
++            JsonHelper.sendJson(ex, 200, resp);
+         } catch (IOException e) {
+             e.printStackTrace();
+-            JsonHelper.sendJson(ex,500,new ErrorResponse("Internal server error"));
++            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
+         }
+     }
+ 
+Index: src/main/java/util/ErrorHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package util;\r\n\r\nimport com.sun.net.httpserver.HttpExchange;\r\nimport response.ErrorResponse;\r\nimport response.MessageResponse;\r\n\r\nimport java.io.IOException;\r\n\r\npublic class ErrorHandler {\r\n    private static Boolean AuthorizationError(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        if (auth == null || !auth.startsWith(\"Bearer \")) {\r\n            JsonHelper.sendJson(ex, 401, new MessageResponse(\"Unauthorized request\"));\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n    private static Boolean TokenError(HttpExchange ex,String token) throws IOException {\r\n        if (TokenBlacklist.isBlacklisted(token) || !JwtUtil.validateToken(token)) {\r\n            JsonHelper.sendJson(ex, 401, new MessageResponse(\"Unauthorized request\"));\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n    private static Boolean ContentError(HttpExchange ex,String token) throws IOException {\r\n        String ct = ex.getRequestHeaders().getFirst(\"Content-Type\");\r\n        if (ct == null || !ct.contains(\"application/json\")) {\r\n            JsonHelper.sendJson(ex, 415, new MessageResponse(\"Unsupported media type\"));\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n    private static Boolean ManyRequestError(HttpExchange ex,String token) throws IOException {\r\n        String userKey = JwtUtil.getUserIdFromToken(token);\r\n        if (!RateLimiter.allowRequest(userKey)) {\r\n            JsonHelper.sendJson(ex, 429, new ErrorResponse(\"Too many requests\"));\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n    public static boolean FindError(HttpExchange ex,String token) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        return ErrorHandler.AuthorizationError(ex) || ErrorHandler.TokenError(ex, token)\r\n                || ErrorHandler.ContentError(ex, token) || ErrorHandler.ManyRequestError(ex, token);\r\n    }\r\n    public static boolean RateLackToken(HttpExchange ex) throws IOException {\r\n        String clientIp = ex.getRemoteAddress()\r\n                .getAddress()\r\n                .getHostAddress();\r\n        if (!RateLimiter.allowRequest(clientIp)) {\r\n            JsonHelper.sendJson(ex, 429, new ErrorResponse(\"Too many requests\"));\r\n            return true;\r\n        }\r\n        return false;\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/main/java/util/ErrorHandler.java b/src/main/java/util/ErrorHandler.java
+--- a/src/main/java/util/ErrorHandler.java	(revision 5d5c33ad7ff3f8f7b68c707c9ff039349c561316)
++++ b/src/main/java/util/ErrorHandler.java	(date 1749150905829)
+@@ -1,36 +1,41 @@
+ package util;
+ 
+ import com.sun.net.httpserver.HttpExchange;
++import org.hibernate.annotations.Check;
+ import response.ErrorResponse;
+ import response.MessageResponse;
+ 
+ import java.io.IOException;
++import java.util.Objects;
+ 
+ public class ErrorHandler {
+     private static Boolean AuthorizationError(HttpExchange ex) throws IOException {
+         String auth = ex.getRequestHeaders().getFirst("Authorization");
+         if (auth == null || !auth.startsWith("Bearer ")) {
+-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
++            JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+             return true;
+         }
+         return false;
+     }
+-    private static Boolean TokenError(HttpExchange ex,String token) throws IOException {
++
++    private static Boolean TokenError(HttpExchange ex, String token) throws IOException {
+         if (TokenBlacklist.isBlacklisted(token) || !JwtUtil.validateToken(token)) {
+-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
++            JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+             return true;
+         }
+         return false;
+     }
+-    private static Boolean ContentError(HttpExchange ex,String token) throws IOException {
++
++    private static Boolean ContentError(HttpExchange ex, String token) throws IOException {
+         String ct = ex.getRequestHeaders().getFirst("Content-Type");
+         if (ct == null || !ct.contains("application/json")) {
+-            JsonHelper.sendJson(ex, 415, new MessageResponse("Unsupported media type"));
++            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported media type"));
+             return true;
+         }
+         return false;
+     }
+-    private static Boolean ManyRequestError(HttpExchange ex,String token) throws IOException {
++
++    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
+         String userKey = JwtUtil.getUserIdFromToken(token);
+         if (!RateLimiter.allowRequest(userKey)) {
+             JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
+@@ -38,11 +43,21 @@
+         }
+         return false;
+     }
+-    public static boolean FindError(HttpExchange ex,String token) throws IOException {
++
++    public static boolean FindError(HttpExchange ex, String token) throws IOException {
+         String auth = ex.getRequestHeaders().getFirst("Authorization");
+         return ErrorHandler.AuthorizationError(ex) || ErrorHandler.TokenError(ex, token)
+                 || ErrorHandler.ContentError(ex, token) || ErrorHandler.ManyRequestError(ex, token);
+     }
++
++    public static boolean Forbid(HttpExchange ex, String roleShouldBe, String token) throws IOException {
++        if (Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase(roleShouldBe)) {
++            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
++            return false;
++        }
++        return true;
++    }
++
+     public static boolean RateLackToken(HttpExchange ex) throws IOException {
+         String clientIp = ex.getRemoteAddress()
+                 .getAddress()
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"63b0684b-c48a-4859-ba1e-ab05095bf453\" name=\"Changes\" comment=\"\">\r\n      <change beforePath=\"$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Enum\" />\r\n        <option value=\"Class\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"develop3\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 8\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2x0MxPexzzCwG0ltT1ZmzfLGkjm\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"Application.Main.executor\": \"Run\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"RunOnceActivity.git.unshallow\": \"true\",\r\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\r\n    \"git-widget-placeholder\": \"backup\",\r\n    \"kotlin-language-version-configured\": \"true\",\r\n    \"last_opened_file_path\": \"C:/Users/ASUS/Desktop/My/FoodApp\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"settings.editor.selected.configurable\": \"preferences.pluginManager\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  },\r\n  \"keyToStringList\": {\r\n    \"DatabaseDriversLRU\": [\r\n      \"sqlite\"\r\n    ]\r\n  }\r\n}]]></component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"CopyFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\ASUS\\Desktop\\My\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"RunManager\">\r\n    <configuration name=\"Main\" type=\"Application\" factoryName=\"Application\" temporary=\"true\" nameIsGenerated=\"true\">\r\n      <option name=\"MAIN_CLASS_NAME\" value=\"Main\" />\r\n      <module name=\"food-app\" />\r\n      <method v=\"2\">\r\n        <option name=\"Make\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <recent_temporary>\r\n      <list>\r\n        <item itemvalue=\"Application.Main\" />\r\n      </list>\r\n    </recent_temporary>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46\" />\r\n        <option value=\"bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"63b0684b-c48a-4859-ba1e-ab05095bf453\" name=\"Changes\" comment=\"\" />\r\n      <created>1747070783903</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1747070783903</updated>\r\n      <workItem from=\"1747070785352\" duration=\"1179000\" />\r\n      <workItem from=\"1747071976827\" duration=\"1273000\" />\r\n      <workItem from=\"1747073644277\" duration=\"435000\" />\r\n      <workItem from=\"1747154454604\" duration=\"891000\" />\r\n      <workItem from=\"1747155387979\" duration=\"39000\" />\r\n      <workItem from=\"1747155433391\" duration=\"3750000\" />\r\n      <workItem from=\"1747222870657\" duration=\"6103000\" />\r\n      <workItem from=\"1747230009648\" duration=\"834000\" />\r\n      <workItem from=\"1747504564288\" duration=\"2789000\" />\r\n      <workItem from=\"1747672363162\" duration=\"860000\" />\r\n      <workItem from=\"1747825166237\" duration=\"4479000\" />\r\n      <workItem from=\"1747829722428\" duration=\"3452000\" />\r\n      <workItem from=\"1747892695520\" duration=\"6470000\" />\r\n      <workItem from=\"1747908158082\" duration=\"4496000\" />\r\n      <workItem from=\"1747931356780\" duration=\"3616000\" />\r\n      <workItem from=\"1747936123801\" duration=\"3515000\" />\r\n      <workItem from=\"1747996292588\" duration=\"4342000\" />\r\n      <workItem from=\"1748010406303\" duration=\"514000\" />\r\n      <workItem from=\"1748010930744\" duration=\"776000\" />\r\n      <workItem from=\"1748011717095\" duration=\"591000\" />\r\n      <workItem from=\"1748104206535\" duration=\"3944000\" />\r\n      <workItem from=\"1748108167645\" duration=\"70000\" />\r\n      <workItem from=\"1748108284136\" duration=\"3714000\" />\r\n      <workItem from=\"1748183446016\" duration=\"9449000\" />\r\n      <workItem from=\"1748257627231\" duration=\"4381000\" />\r\n      <workItem from=\"1748278746174\" duration=\"5295000\" />\r\n      <workItem from=\"1748287182794\" duration=\"785000\" />\r\n      <workItem from=\"1748365280055\" duration=\"7011000\" />\r\n      <workItem from=\"1748513747464\" duration=\"3890000\" />\r\n      <workItem from=\"1748531698876\" duration=\"5887000\" />\r\n      <workItem from=\"1748781024450\" duration=\"3500000\" />\r\n      <workItem from=\"1748784861315\" duration=\"3966000\" />\r\n      <workItem from=\"1748856733965\" duration=\"189000\" />\r\n      <workItem from=\"1748856932203\" duration=\"1320000\" />\r\n      <workItem from=\"1748858272331\" duration=\"6749000\" />\r\n      <workItem from=\"1748886080581\" duration=\"832000\" />\r\n      <workItem from=\"1748933934803\" duration=\"6045000\" />\r\n      <workItem from=\"1748958707668\" duration=\"3806000\" />\r\n      <workItem from=\"1748962678507\" duration=\"5633000\" />\r\n      <workItem from=\"1749036130576\" duration=\"3286000\" />\r\n      <workItem from=\"1749039473776\" duration=\"4149000\" />\r\n      <workItem from=\"1749043691240\" duration=\"1157000\" />\r\n      <workItem from=\"1749049559190\" duration=\"5249000\" />\r\n      <workItem from=\"1749117600975\" duration=\"669000\" />\r\n    </task>\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 5d5c33ad7ff3f8f7b68c707c9ff039349c561316)
++++ b/.idea/workspace.xml	(date 1749200750882)
+@@ -5,7 +5,10 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
+-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -36,29 +39,29 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "Application.Main.executor": "Run",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+-    "git-widget-placeholder": "backup",
+-    "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "C:/Users/ASUS/Desktop/My/FoodApp",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "nodejs_package_manager_path": "npm",
+-    "settings.editor.selected.configurable": "preferences.pluginManager",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;develop4&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;C:/Users/ASUS/Desktop/My/FoodApp&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   },
+-  "keyToStringList": {
+-    "DatabaseDriversLRU": [
+-      "sqlite"
++  &quot;keyToStringList&quot;: {
++    &quot;DatabaseDriversLRU&quot;: [
++      &quot;sqlite&quot;
+     ]
+   }
+-}]]></component>
++}</component>
+   <component name="RecentsManager">
+     <key name="CopyFile.RECENT_KEYS">
+       <recent name="C:\Users\ASUS\Desktop\My" />
+@@ -137,7 +140,9 @@
+       <workItem from="1749039473776" duration="4149000" />
+       <workItem from="1749043691240" duration="1157000" />
+       <workItem from="1749049559190" duration="5249000" />
+-      <workItem from="1749117600975" duration="669000" />
++      <workItem from="1749117600975" duration="1144000" />
++      <workItem from="1749148873818" duration="2027000" />
++      <workItem from="1749200578757" duration="171000" />
+     </task>
+     <servers />
+   </component>
+Index: src/main/java/HTTPhandler/HttpUserHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package HTTPhandler;\r\n\r\nimport com.google.gson.FieldNamingPolicy;\r\nimport com.google.gson.Gson;\r\nimport com.google.gson.GsonBuilder;\r\nimport com.sun.net.httpserver.HttpExchange;\r\nimport com.sun.net.httpserver.HttpHandler;\r\nimport dto.EditProfileRequest;\r\nimport dto.LoginRequest;\r\nimport dto.RegisterRequest;\r\nimport dto.UserInfo;\r\nimport entity.Role;\r\nimport entity.UserStatus;\r\nimport org.hibernate.Session;\r\nimport org.hibernate.Transaction;\r\nimport response.ErrorResponse;\r\nimport response.LoginResponse;\r\nimport response.MessageResponse;\r\nimport response.RegisterResponse;\r\nimport util.*;\r\n\r\nimport java.io.IOException;\r\nimport java.io.InputStreamReader;\r\nimport java.nio.charset.StandardCharsets;\r\n\r\nimport entity.User;\r\n\r\npublic class HttpUserHandler implements HttpHandler {\r\n    private static final Gson GSON = new GsonBuilder()\r\n            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)\r\n            .create();\r\n\r\n    @Override\r\n    public void handle(HttpExchange ex) throws IOException {\r\n        String fullPath = ex.getRequestURI().getPath();\r\n        String method = ex.getRequestMethod();\r\n\r\n        try {\r\n            String sub = fullPath.substring(\"/auth\".length());\r\n            if (\"/register\".equals(sub) && \"POST\".equalsIgnoreCase(method)) {\r\n                handleRegister(ex);\r\n                return;\r\n            }\r\n            if (\"/login\".equals(sub) && \"POST\".equalsIgnoreCase(method)) {\r\n                handleLogin(ex);\r\n                return;\r\n            }\r\n            if (\"/logout\".equals(sub) && \"POST\".equalsIgnoreCase(method)) {\r\n                handleLogout(ex);\r\n                return;\r\n            }\r\n            if (\"/profile\".equals(sub) && \"GET\".equalsIgnoreCase(method)) {\r\n                handleGetProfile(ex);\r\n                return;\r\n            }\r\n            if (sub.startsWith(\"/profile\") && \"PUT\".equalsIgnoreCase(method)) {\r\n                handleEditProfile(ex);\r\n                return;\r\n            }\r\n            ex.sendResponseHeaders(404, -1);\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleRegister(HttpExchange ex) throws IOException {\r\n\r\n        RegisterRequest req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                RegisterRequest.class\r\n        );\r\n        if (req == null) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Invalid JSON body\"));\r\n            return;\r\n        }\r\n\r\n        // 4. چک فیلدهای ضروری\r\n        System.out.println(req.getPassword());\r\n        System.out.println(req.getRole());\r\n        System.out.println(req.getAddress());\r\n        if (req.getFull_name() == null || req.getPhone() == null\r\n                || req.getPassword() == null || req.getRole() == null\r\n                || req.getAddress() == null) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Missing required fields\"));\r\n            return;\r\n        }\r\n        if (ErrorHandler.RateLackToken(ex)) return;\r\n        if (req.getFull_name() == null || req.getPhone() == null ||\r\n                req.getPassword() == null || req.getRole() == null ||\r\n                req.getAddress() == null) {\r\n            JsonHelper.sendJson(ex, 400, new MessageResponse(\"Invalid input\"));\r\n            return;\r\n        }\r\n\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n\r\n            boolean phone_exists = session.createQuery(\r\n                            \"select 1 from User u where u.phone = :phone\", Integer.class)\r\n                    .setParameter(\"phone\", req.getPhone())\r\n                    .uniqueResult() != null;\r\n            boolean email_exists = session.createQuery(\r\n                            \"select 1 from User u where u.email = :email\", String.class)\r\n                    .setParameter(\"email\", req.getEmail())\r\n                    .uniqueResult() != null;\r\n            if (phone_exists || email_exists) {\r\n                JsonHelper.sendJson(ex, 409, new MessageResponse(\"Phone number already exists\"));\r\n                return;\r\n            }\r\n\r\n            User user = new User();\r\n            user.setFull_name(req.getFull_name());\r\n            user.setPhone(req.getPhone());\r\n            user.setEmail(req.getEmail());\r\n            user.setPassword(req.getPassword()); // در عمل هش کن\r\n            user.setRole(Role.valueOf(req.getRole().toUpperCase()));\r\n            user.setAddress(req.getAddress());\r\n            user.setBank_info(req.getBank_info());\r\n\r\n            session.persist(user);\r\n            tx.commit();\r\n\r\n            String token = JwtUtil.generateToken(user);\r\n\r\n            RegisterResponse resp = new RegisterResponse(\r\n                    \"User registered successfully\",\r\n                    user.getUser_id().toString(),\r\n                    token\r\n            );\r\n            JsonHelper.sendJson(ex, 200, resp);\r\n\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleLogin(HttpExchange ex) throws IOException {\r\n        LoginRequest req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                LoginRequest.class\r\n        );\r\n        if (ErrorHandler.RateLackToken(ex)) return;\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            User user = session.createQuery(\r\n                            \"from User where phone = :phone\", User.class)\r\n                    .setParameter(\"phone\", req.getPhone())\r\n                    .uniqueResult();\r\n            if (user == null || !user.getPassword().equals(req.getPassword())) {\r\n                JsonHelper.sendJson(ex, 400, new ErrorResponse(\"Invalid input\"));\r\n                return;\r\n            }\r\n            Role role = user.getRole();\r\n//            if (role == Role.SELLER || role == Role.COURIER) {\r\n//                if (user.getStatus() != UserStatus.APPROVED) {\r\n//                    JsonHelper.sendJson(ex, 403, new ErrorResponse(\"Forbidden request\"));\r\n//                    return;\r\n//                }\r\n//            }\r\n            if(user.getStatus() == UserStatus.REJECTED) {\r\n                JsonHelper.sendJson(ex, 403, new ErrorResponse(\"Forbidden request\"));\r\n            }\r\n            String token = JwtUtil.generateToken(user);\r\n\r\n            UserInfo info = new UserInfo(\r\n                    user.getUser_id().toString(),\r\n                    user.getFull_name(),\r\n                    user.getPhone(),\r\n                    user.getEmail(),\r\n                    user.getRole().name(),\r\n                    user.getAddress(),\r\n                    user.getProfileImageBase64(),\r\n                    user.getBank_info()\r\n            );\r\n            LoginResponse resp = new LoginResponse(\r\n                    \"User logged in successfully\",\r\n                    token,\r\n                    info\r\n            );\r\n            JsonHelper.sendJson(ex, 200, resp);\r\n        } catch (IOException e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleGetProfile(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth.substring(7);\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n        String userId = JwtUtil.getUserIdFromToken(token);\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            User user = session.get(User.class, Long.valueOf(userId));\r\n            if (user == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"User not found\"));\r\n                return;\r\n            }\r\n            UserInfo info = new UserInfo(user);\r\n            JsonHelper.sendJson(ex, 200, info);\r\n        }\r\n    }\r\n\r\n    private void handleEditProfile(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth.substring(7);\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n        String userId = JwtUtil.getUserIdFromToken(token);\r\n        EditProfileRequest req = GSON.fromJson(\r\n                new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),\r\n                EditProfileRequest.class\r\n        );\r\n        try (Session session = HibernateUtil.getSessionFactory().openSession()) {\r\n            Transaction tx = session.beginTransaction();\r\n            User user = session.get(User.class, Long.valueOf(userId));\r\n            if (user == null) {\r\n                JsonHelper.sendJson(ex, 404, new MessageResponse(\"User not found\"));\r\n                return;\r\n            }\r\n            if (req.getFull_name() != null) user.setFull_name(req.getFull_name());\r\n            if (req.getAddress() != null) user.setAddress(req.getAddress());\r\n            if (req.getEmail() != null) user.setEmail(req.getEmail());\r\n            if (req.getProfileImageBase64() != null) user.setProfileImageBase64(req.getProfileImageBase64());\r\n            if (req.getBank_info() != null) user.setBank_info(req.getBank_info());\r\n            session.merge(user);\r\n            tx.commit();\r\n            JsonHelper.sendJson(ex, 200, new MessageResponse(\"Profile updated successfully\"));\r\n        } catch (Exception e) {\r\n            e.printStackTrace();\r\n            JsonHelper.sendJson(ex, 500, new MessageResponse(\"Internal server error\"));\r\n        }\r\n    }\r\n\r\n    private void handleLogout(HttpExchange ex) throws IOException {\r\n        String auth = ex.getRequestHeaders().getFirst(\"Authorization\");\r\n        String token = auth.substring(7);\r\n        if (ErrorHandler.FindError(ex, token)) return;\r\n        TokenBlacklist.blacklistToken(token);\r\n        JsonHelper.sendJson(ex, 200, new MessageResponse(\"User logged out successfully\"));\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/main/java/HTTPhandler/HttpUserHandler.java b/src/main/java/HTTPhandler/HttpUserHandler.java
+--- a/src/main/java/HTTPhandler/HttpUserHandler.java	(revision 5d5c33ad7ff3f8f7b68c707c9ff039349c561316)
++++ b/src/main/java/HTTPhandler/HttpUserHandler.java	(date 1749150905823)
+@@ -74,25 +74,27 @@
+             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
+             return;
+         }
+-
+-        // 4. چک فیلدهای ضروری
+-        System.out.println(req.getPassword());
+-        System.out.println(req.getRole());
+-        System.out.println(req.getAddress());
+-        if (req.getFull_name() == null || req.getPhone() == null
+-                || req.getPassword() == null || req.getRole() == null
+-                || req.getAddress() == null) {
+-            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required fields"));
++        if (ErrorHandler.RateLackToken(ex)) return;
++        if (req.getFull_name() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid full_name"));
+             return;
+         }
+-        if (ErrorHandler.RateLackToken(ex)) return;
+-        if (req.getFull_name() == null || req.getPhone() == null ||
+-                req.getPassword() == null || req.getRole() == null ||
+-                req.getAddress() == null) {
+-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
++        if (req.getPhone() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid phone"));
++            return;
++        }
++        if (req.getPassword() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid password"));
++            return;
++        }
++        if (req.getAddress() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid address"));
++            return;
++        }
++        if (req.getRole() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid role"));
+             return;
+         }
+-
+         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+             Transaction tx = session.beginTransaction();
+ 
+@@ -108,28 +110,23 @@
+                 JsonHelper.sendJson(ex, 409, new MessageResponse("Phone number already exists"));
+                 return;
+             }
+-
+             User user = new User();
+             user.setFull_name(req.getFull_name());
+             user.setPhone(req.getPhone());
+             user.setEmail(req.getEmail());
+-            user.setPassword(req.getPassword()); // در عمل هش کن
++            user.setPassword(req.getPassword());
+             user.setRole(Role.valueOf(req.getRole().toUpperCase()));
+             user.setAddress(req.getAddress());
+             user.setBank_info(req.getBank_info());
+-
+             session.persist(user);
+             tx.commit();
+-
+             String token = JwtUtil.generateToken(user);
+-
+             RegisterResponse resp = new RegisterResponse(
+                     "User registered successfully",
+                     user.getUser_id().toString(),
+                     token
+             );
+             JsonHelper.sendJson(ex, 200, resp);
+-
+         } catch (Exception e) {
+             e.printStackTrace();
+             JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+@@ -141,28 +138,39 @@
+                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
+                 LoginRequest.class
+         );
++        if (req == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
++            return;
++        }
++        if (req.getPhone() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid phone"));
++            return;
++        }
++        if (req.getPassword() == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid password"));
++            return;
++        }
+         if (ErrorHandler.RateLackToken(ex)) return;
+         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+             User user = session.createQuery(
+                             "from User where phone = :phone", User.class)
+                     .setParameter("phone", req.getPhone())
+                     .uniqueResult();
+-            if (user == null || !user.getPassword().equals(req.getPassword())) {
+-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
++            if (user == null) {
++                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON body"));
+                 return;
+             }
+             Role role = user.getRole();
+-//            if (role == Role.SELLER || role == Role.COURIER) {
+-//                if (user.getStatus() != UserStatus.APPROVED) {
+-//                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+-//                    return;
+-//                }
+-//            }
+-            if(user.getStatus() == UserStatus.REJECTED) {
++            if (role == Role.SELLER || role == Role.COURIER) {
++                if (user.getStatus() != UserStatus.APPROVED) {
++                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
++                    return;
++                }
++            }
++            if (user.getStatus() == UserStatus.REJECTED) {
+                 JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+             }
+             String token = JwtUtil.generateToken(user);
+-
+             UserInfo info = new UserInfo(
+                     user.getUser_id().toString(),
+                     user.getFull_name(),
+@@ -186,7 +194,13 @@
+     }
+ 
+     private void handleGetProfile(HttpExchange ex) throws IOException {
+-        String auth = ex.getRequestHeaders().getFirst("Authorization");
++        String auth;
++        try {
++            auth = ex.getRequestHeaders().getFirst("Authorization");
++        } catch (Exception e) {
++            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
++            return;
++        }
+         String token = auth.substring(7);
+         if (ErrorHandler.FindError(ex, token)) return;
+         String userId = JwtUtil.getUserIdFromToken(token);
+@@ -202,7 +216,13 @@
+     }
+ 
+     private void handleEditProfile(HttpExchange ex) throws IOException {
+-        String auth = ex.getRequestHeaders().getFirst("Authorization");
++        String auth;
++        try {
++            auth = ex.getRequestHeaders().getFirst("Authorization");
++        } catch (Exception e) {
++            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
++            return;
++        }
+         String token = auth.substring(7);
+         if (ErrorHandler.FindError(ex, token)) return;
+         String userId = JwtUtil.getUserIdFromToken(token);
+@@ -210,11 +230,16 @@
+                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
+                 EditProfileRequest.class
+         );
++        if (req == null) {
++            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
++            return;
++        }
+         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+             Transaction tx = session.beginTransaction();
++            assert userId != null;
+             User user = session.get(User.class, Long.valueOf(userId));
+             if (user == null) {
+-                JsonHelper.sendJson(ex, 404, new MessageResponse("User not found"));
++                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
+                 return;
+             }
+             if (req.getFull_name() != null) user.setFull_name(req.getFull_name());
+@@ -224,19 +249,25 @@
+             if (req.getBank_info() != null) user.setBank_info(req.getBank_info());
+             session.merge(user);
+             tx.commit();
+-            JsonHelper.sendJson(ex, 200, new MessageResponse("Profile updated successfully"));
++            JsonHelper.sendJson(ex, 200, new ErrorResponse("Profile updated successfully"));
+         } catch (Exception e) {
+             e.printStackTrace();
+-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
++            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
+         }
+     }
+ 
+     private void handleLogout(HttpExchange ex) throws IOException {
+-        String auth = ex.getRequestHeaders().getFirst("Authorization");
++        String auth;
++        try {
++            auth = ex.getRequestHeaders().getFirst("Authorization");
++        } catch (Exception e) {
++            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
++            return;
++        }
+         String token = auth.substring(7);
+         if (ErrorHandler.FindError(ex, token)) return;
+         TokenBlacklist.blacklistToken(token);
+-        JsonHelper.sendJson(ex, 200, new MessageResponse("User logged out successfully"));
++        JsonHelper.sendJson(ex, 200, new ErrorResponse("User logged out successfully"));
+     }
+ }
+ 

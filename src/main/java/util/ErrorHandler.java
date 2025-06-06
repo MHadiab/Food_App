@@ -1,36 +1,41 @@
 package util;
 
 import com.sun.net.httpserver.HttpExchange;
+import org.hibernate.annotations.Check;
 import response.ErrorResponse;
 import response.MessageResponse;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ErrorHandler {
     private static Boolean AuthorizationError(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
             return true;
         }
         return false;
     }
-    private static Boolean TokenError(HttpExchange ex,String token) throws IOException {
+
+    private static Boolean TokenError(HttpExchange ex, String token) throws IOException {
         if (TokenBlacklist.isBlacklisted(token) || !JwtUtil.validateToken(token)) {
-            JsonHelper.sendJson(ex, 401, new MessageResponse("Unauthorized request"));
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
             return true;
         }
         return false;
     }
-    private static Boolean ContentError(HttpExchange ex,String token) throws IOException {
+
+    private static Boolean ContentError(HttpExchange ex, String token) throws IOException {
         String ct = ex.getRequestHeaders().getFirst("Content-Type");
         if (ct == null || !ct.contains("application/json")) {
-            JsonHelper.sendJson(ex, 415, new MessageResponse("Unsupported media type"));
+            JsonHelper.sendJson(ex, 415, new ErrorResponse("Unsupported media type"));
             return true;
         }
         return false;
     }
-    private static Boolean ManyRequestError(HttpExchange ex,String token) throws IOException {
+
+    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
         String userKey = JwtUtil.getUserIdFromToken(token);
         if (!RateLimiter.allowRequest(userKey)) {
             JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
@@ -38,11 +43,21 @@ public class ErrorHandler {
         }
         return false;
     }
-    public static boolean FindError(HttpExchange ex,String token) throws IOException {
+
+    public static boolean FindError(HttpExchange ex, String token) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         return ErrorHandler.AuthorizationError(ex) || ErrorHandler.TokenError(ex, token)
                 || ErrorHandler.ContentError(ex, token) || ErrorHandler.ManyRequestError(ex, token);
     }
+
+    public static boolean Forbid(HttpExchange ex, String roleShouldBe, String token) throws IOException {
+        if (Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase(roleShouldBe)) {
+            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+            return false;
+        }
+        return true;
+    }
+
     public static boolean RateLackToken(HttpExchange ex) throws IOException {
         String clientIp = ex.getRemoteAddress()
                 .getAddress()

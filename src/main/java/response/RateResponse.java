@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 @Getter
 @Setter
@@ -13,9 +14,9 @@ public class RateResponse {
     private long item_id;
     private Integer rating;
     private String comment;
-    private ArrayList<String> imageBase64;
+    private ArrayList<String> imageBase64=new ArrayList<>();
     private Long user_id;
-    private LocalDateTime created_at;
+    private String created_at;
 
     public RateResponse(Rating rating) {
         this.rating = rating.getRating();
@@ -25,7 +26,8 @@ public class RateResponse {
         if (rating.getImageBase64() != null) {
             this.imageBase64 = new ArrayList<>(rating.getImageBase64());
         }
-        this.created_at = rating.getCreated_at();
+        this.id = rating.getId();
+        this.created_at = rating.getCreated_at().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         this.user_id = rating.getUser_id();
     }
 }
