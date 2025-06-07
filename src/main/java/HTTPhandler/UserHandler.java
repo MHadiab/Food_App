@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 import entity.User;
 
-public class HttpUserHandler implements HttpHandler {
+public class UserHandler implements HttpHandler {
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
@@ -161,12 +161,12 @@ public class HttpUserHandler implements HttpHandler {
                 return;
             }
             Role role = user.getRole();
-//            if (role == Role.SELLER || role == Role.COURIER) {
-//                if (user.getStatus() != UserStatus.APPROVED) {
-//                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-//                    return;
-//                }
-//            }
+            if (role == Role.SELLER || role == Role.COURIER) {
+                if (user.getStatus() != UserStatus.APPROVED) {
+                    JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
+                    return;
+                }
+            }
             if (user.getStatus() == UserStatus.REJECTED) {
                 JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
             }

@@ -5,39 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/AdminHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpMenuHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpMenuHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpFoodItemHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/FoodItemHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpMenuHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/MenuHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpRestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/HttpUserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantDispatcher.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/RateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/RateRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/entity/Rating.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/entity/Rating.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/FoodItemResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/FoodItemResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/RateResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/RateResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/RatingDetailResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/RatingDetailResponse.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/hibernate.cfg.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/hibernate.cfg.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/AdminHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpFoodItemHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpFoodItemHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpMenuHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpMenuHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler$1.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpRestaurantHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/HttpUserHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Main.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/dto/CreateOrderRequest.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/dto/CreateOrderRequest.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/entity/OrderStatus.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/OrderStatus.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/entity/Restaurant.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/entity/Restaurant.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/hibernate.cfg.xml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/hibernate.cfg.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/FoodItemResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/FoodItemResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/OrderResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/RestaurantResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/RestaurantResponse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/util/ErrorHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/ErrorHandler.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.txt" beforeDir="false" afterPath="$PROJECT_DIR$/test.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,28 +44,28 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
-        &quot;keyToString&quot;: {
-        &quot;Application.Main.executor&quot;: &quot;Run&quot;,
-        &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-        &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-        &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-        &quot;git-widget-placeholder&quot;: &quot;develop4&quot;,
-        &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-        &quot;last_opened_file_path&quot;: &quot;C:/Users/ASUS/Desktop/My/FoodApp&quot;,
-        &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-        &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-        &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-        &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-        &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-        &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-        &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
-        },
-        &quot;keyToStringList&quot;: {
-        &quot;DatabaseDriversLRU&quot;: [
-        &quot;sqlite&quot;
-        ]
-        }
-        }</component>
+  &quot;keyToString&quot;: {
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ASUS/Desktop/My/FoodApp&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;
+    ]
+  }
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\ASUS\Desktop\My" />
@@ -174,6 +149,10 @@
       <workItem from="1749200578757" duration="171000" />
       <workItem from="1749212198145" duration="5028000" />
       <workItem from="1749230767552" duration="5437000" />
+      <workItem from="1749285803300" duration="3000" />
+      <workItem from="1749294129559" duration="279000" />
+      <workItem from="1749295863496" duration="11000" />
+      <workItem from="1749305331444" duration="3659000" />
     </task>
     <servers />
   </component>

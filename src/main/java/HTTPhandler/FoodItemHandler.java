@@ -12,17 +12,19 @@ import entity.Restaurant;
 import entity.Role;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import response.ErrorResponse;
 import response.FoodItemResponse;
-import response.MessageResponse;
+import response.ErrorResponse;
 import util.ErrorHandler;
 import util.HibernateUtil;
 import util.JsonHelper;
 import util.JwtUtil;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-public class HttpFoodItemHandler implements HttpHandler {
+public class FoodItemHandler implements HttpHandler {
 
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
@@ -34,67 +36,69 @@ public class HttpFoodItemHandler implements HttpHandler {
         String method = ex.getRequestMethod();
 
         try {
-            // POST /restaurants/{id}/item
+            String auth;
+            try {
+                auth = ex.getRequestHeaders().getFirst("Authorization");
+            } catch (Exception e) {
+                JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+                return;
+            }
+            String token = auth.substring(7);
+
             if (path.matches("/restaurants/\\d+/item") && "POST".equalsIgnoreCase(method)) {
-                handleAddFoodItemToRestaurant(ex);
-            }
-            // PUT /restaurants/{id}/item/{item_id}
-            else if (path.matches("/restaurants/\\d+/item/\\d+") && "PUT".equalsIgnoreCase(method)) {
-                handleUpdateFoodItem(ex);
-            }
-            // DELETE /restaurants/{id}/item/{item_id}
-            else if (path.matches("/restaurants/\\d+/item/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-                handleDeleteFoodItem(ex);
+                handleAddFoodItemToRestaurant(ex, token);
+            } else if (path.matches("/restaurants/\\d+/item/\\d+") && "PUT".equalsIgnoreCase(method)) {
+                handleUpdateFoodItem(ex, token);
+            } else if (path.matches("/restaurants/\\d+/item/\\d+") && "DELETE".equalsIgnoreCase(method)) {
+                handleDeleteFoodItem(ex, token);
             } else {
                 ex.sendResponseHeaders(404, -1);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error")); // مشکل سرور
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
-    private boolean isSellerAndOwner(HttpExchange ex, String token, Long restaurantId, Session session) throws IOException {
+    private boolean wrongSellerOrOwner(HttpExchange ex, String token, Long restaurantId, Session session) throws IOException {
         String userRole = JwtUtil.getRoleFromToken(token);
         if (userRole == null || !userRole.equals(Role.SELLER.name())) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Seller access required."));
-            return false;
+            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: Seller access required."));
+            return true;
         }
 
         String sellerIdFromToken = JwtUtil.getUserIdFromToken(token);
         Restaurant restaurant = session.get(Restaurant.class, restaurantId);
 
         if (restaurant == null) {
-            JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found: Restaurant not found."));
-            return false;
+            JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found: Restaurant not found."));
+            return true;
         }
 
-        if (restaurant.getSeller_id() != (Long.valueOf(sellerIdFromToken))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You do not own this restaurant."));
-            return false;
+        assert sellerIdFromToken != null;
+        if (restaurant.getSeller_id() != (Long.parseLong(sellerIdFromToken))) {
+            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: You do not own this restaurant."));
+            return true;
         }
-        return true;
+        return false;
     }
 
 
-    // با این متد از تکرار کد برای بررسی وجود ایتم در رستوران برای اپدیت و حذف استفاده میکنیم
     private FoodItem getAndValidateFoodItemForRestaurant(Session session, Long itemId, Long restaurantId, HttpExchange ex) throws IOException {
         FoodItem foodItem = session.get(FoodItem.class, itemId);
         if (foodItem == null || !foodItem.getRestaurant().getId().equals(restaurantId)) {
-            JsonHelper.sendJson(ex, 404, new MessageResponse("Resource not found: Food item not found in this restaurant."));
+            JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found: Food item not found in this restaurant."));
             return null;
         }
         return foodItem;
     }  // اگر توی تست های مشکل داشتیم این بخش باید مجدد چک شه
 
 
-    private void handleAddFoodItemToRestaurant(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth != null ? auth.substring(7) : null;
+    private void handleAddFoodItemToRestaurant(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token)) return;
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
-        Long restaurantId = Long.parseLong(pathParts[2]); // جداسازی ایدی رستوران
-        if (ErrorHandler.FindError(ex, token)) return;
+        Long restaurantId = Long.parseLong(pathParts[2]);
 
 
         FoodItemRequest req = GSON.fromJson(
@@ -103,18 +107,34 @@ public class HttpFoodItemHandler implements HttpHandler {
         );
 
 
-        // این بخش بعدا باید بهتر مدیریت بشه
-        if (req.getName() == null || req.getDescription() == null || req.getPrice() == null || req.getSupply() == null || req.getKeywords() == null || req.getKeywords().isEmpty()) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: name, description, price, supply, and at least one keyword are required."));
+        if (req.getName() == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid name"));
+            return;
+        }
+        if (req.getDescription() == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid description"));
+            return;
+        }
+        if (req.getPrice() == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid price"));
+            return;
+        }
+        if (req.getSupply() == null) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid supply"));
+            return;
+
+        }
+        if (req.getKeywords() == null || req.getKeywords().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid keywords"));
             return;
         }
         if (req.getPrice() < 0 || req.getSupply() < 0) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: price and supply cannot be negative."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input: price and supply cannot be negative."));
             return;
         }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if (!isSellerAndOwner(ex, token, restaurantId, session)) return; // بررسی وجود رستوان و بررسی مالکیت شخص
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
 
             Transaction tx = session.beginTransaction();
             Restaurant restaurant = session.get(Restaurant.class, restaurantId);
@@ -132,22 +152,19 @@ public class HttpFoodItemHandler implements HttpHandler {
             session.persist(foodItem);
             tx.commit();
 
-            JsonHelper.sendJson(ex, 200, new FoodItemResponse(foodItem)); 
+            JsonHelper.sendJson(ex, 200, new FoodItemResponse(foodItem));
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while adding food item."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while adding food item."));
         }
     }
 
-    private void handleUpdateFoodItem(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth != null ? auth.substring(7) : null;
-
+    private void handleUpdateFoodItem(HttpExchange ex ,String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token)) return;
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]);
-        Long itemId = Long.parseLong(pathParts[4]); // جدا کردن ایدی غذا از دستور
-        if (ErrorHandler.FindError(ex, token)) return;
+        Long itemId = Long.parseLong(pathParts[4]); 
 
         FoodItemRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
@@ -155,25 +172,25 @@ public class HttpFoodItemHandler implements HttpHandler {
         );
 
         if (req.getPrice() != null && req.getPrice() < 0) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: price cannot be negative."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input: price cannot be negative."));
             return;
         }
         if (req.getSupply() != null && req.getSupply() < 0) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: supply cannot be negative."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input: supply cannot be negative."));
             return;
         }
         if (req.getKeywords() != null && req.getKeywords().isEmpty()) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input: keywords list cannot be empty if provided for update."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input: keywords list cannot be empty if provided for update."));
             return;
         }
 
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if (!isSellerAndOwner(ex, token, restaurantId, session)) return;
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
 
-            //  متد کمکی برای دریافت و اعتبارسنجی آیتم غذایی
             FoodItem foodItem = getAndValidateFoodItemForRestaurant(session, itemId, restaurantId, ex);
-            if (foodItem == null) { //   اگر null بود، یعنی خطای 404 توسط متد کمکی ارسال شده و ریترن میکنیم
+            if (foodItem == null) { 
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
                 return;
             }
 
@@ -182,7 +199,6 @@ public class HttpFoodItemHandler implements HttpHandler {
             try {
                 tx = session.beginTransaction();
 
-                // اعمال تغییرات از req به foodItem
                 if (req.getName() != null) foodItem.setName(req.getName());
                 if (req.getImageBase64() != null) foodItem.setImageBase64(req.getImageBase64());
                 if (req.getDescription() != null) foodItem.setDescription(req.getDescription());
@@ -198,35 +214,33 @@ public class HttpFoodItemHandler implements HttpHandler {
                     tx.rollback();  // اگر خطایی بود تغیری نده توی دیتابیس
                 }
                 e.printStackTrace();
-                JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while updating food item."));
+                JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while updating food item."));
             }
         } catch (IOException e) { // برای GSON.fromJson
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid request body."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid request body."));
         } catch (NumberFormatException e) { // برای parseLong
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid ID format in URL."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid ID format in URL."));
         } catch (Exception e) { // خطاهای عمومی دیگر
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("An unexpected error occurred."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("An unexpected error occurred."));
         }
     }
 
-    private void handleDeleteFoodItem(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth != null ? auth.substring(7) : null;
+    private void handleDeleteFoodItem(HttpExchange ex , String token) throws IOException {
 
+        if (ErrorHandler.FindError(ex, token)) return;
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]);
         Long itemId = Long.parseLong(pathParts[4]);
 
-        if (ErrorHandler.FindError(ex, token)) return;
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if (!isSellerAndOwner(ex, token, restaurantId, session)) return;
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
 
-            //  متد کمکی برای دریافت و اعتبارسنجی آیتم غذایی
             FoodItem foodItem = getAndValidateFoodItemForRestaurant(session, itemId, restaurantId, ex);
-            if (foodItem == null) { //   اگر null بود، یعنی خطای 404 توسط متد کمکی ارسال شده و ریترن میکنیم
+            if (foodItem == null) { 
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
                 return;
             }
 
@@ -234,33 +248,32 @@ public class HttpFoodItemHandler implements HttpHandler {
             try {
                 tx = session.beginTransaction();
 
-                // بررسی میکنیم اگر غذا در منویی وجود دارد اون هارو هم حذف کنیم
                 if (foodItem.getMenus() != null) {
                     for (Menu menu : foodItem.getMenus()) {
-                        menu.getItems().remove(foodItem); // حذف غذا از منویی که در آن وجود دارد
-                        session.merge(menu); // Update the menu
+                        menu.getItems().remove(foodItem); 
+                        session.merge(menu); 
                     }
-                    foodItem.getMenus().clear();   // قطع ارتباط از سمت ایتم
+                    foodItem.getMenus().clear();  
                 }
                 session.merge(foodItem);
 
-                session.remove(foodItem); // Delete the food item
+                session.remove(foodItem);
                 tx.commit();
-                JsonHelper.sendJson(ex, 200, new MessageResponse("Food item removed successfully"));
+                JsonHelper.sendJson(ex, 200, new ErrorResponse("Food item removed successfully"));
             } catch (Exception e) {
                 if (tx != null && tx.isActive()) {
                     tx.rollback();
                 }
                 e.printStackTrace();
-                JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while deleting food item."));
+                JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while deleting food item."));
             }
-        } catch (IOException e) { // برای GSON.fromJson
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid request body."));
+        } catch (IOException e) { 
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid request body."));
         } catch (NumberFormatException e) { // برای parseLong
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid ID format in URL."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid ID format in URL."));
         } catch (Exception e) { // خطاهای عمومی دیگر
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("An unexpected error occurred."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("An unexpected error occurred."));
         }
     }
 }

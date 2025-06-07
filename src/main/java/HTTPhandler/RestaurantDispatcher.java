@@ -3,13 +3,12 @@ package HTTPhandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.io.IOException;
 
 public class RestaurantDispatcher implements HttpHandler {
-    private final HttpRestaurantHandler restaurantHandler = new HttpRestaurantHandler();
-    private final HttpFoodItemHandler itemHandler = new HttpFoodItemHandler();
-    private final HttpMenuHandler menuHandler = new HttpMenuHandler();
+    private final RestaurantHandler restaurantHandler = new RestaurantHandler();
+    private final FoodItemHandler itemHandler = new FoodItemHandler();
+    private final MenuHandler menuHandler = new MenuHandler();
     @Override
     public void handle(HttpExchange ex) throws IOException {
         String path   = ex.getRequestURI().getPath();

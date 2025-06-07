@@ -51,11 +51,11 @@ public class ErrorHandler {
     }
 
     public static boolean Forbid(HttpExchange ex, String roleShouldBe, String token) throws IOException {
-        if (Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase(roleShouldBe)) {
+        if (!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase(roleShouldBe)) {
             JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     public static boolean RateLackToken(HttpExchange ex) throws IOException {

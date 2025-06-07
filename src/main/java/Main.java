@@ -12,7 +12,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
-        server.createContext("/auth", new HttpUserHandler());
+        server.createContext("/auth", new UserHandler());
         server.createContext("/restaurants",      new RestaurantDispatcher());
         server.createContext("/orders",           new BuyerHandler());
         server.createContext("/transactions",     new OrderHandler());
