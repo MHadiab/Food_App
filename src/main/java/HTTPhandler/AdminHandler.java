@@ -281,16 +281,35 @@ public class AdminHandler implements HttpHandler {
             return;
         }
 
-        if (req.getCouponCode() == null || req.getCouponCode().trim().isEmpty() ||
-                req.getType() == null || req.getType().trim().isEmpty() ||
-                req.getValue() == null ||
-                req.getMinPrice() == null ||
-                req.getUserCount() == null ||
-                req.getStartDate() == null || req.getStartDate().trim().isEmpty() ||
-                req.getEndDate() == null || req.getEndDate().trim().isEmpty()) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required fields for coupon creation."));
+        if (req.getCouponCode() == null || req.getCouponCode().trim().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid coupon_code"));
             return;
         }
+        if (req.getType() == null || req.getType().trim().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid type"));
+            return;
+        }
+        if (req.getValue() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid value"));
+            return;
+        }
+        if (req.getMinPrice() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid min_price"));
+            return;
+        }
+        if (req.getUserCount() == null) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid user_count"));
+            return;
+        }
+        if (req.getStartDate() == null || req.getStartDate().trim().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid start_date"));
+            return;
+        }
+        if (req.getEndDate() == null || req.getEndDate().trim().isEmpty()) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid end_date"));
+            return;
+        }
+
 
 
         CouponType couponType;
