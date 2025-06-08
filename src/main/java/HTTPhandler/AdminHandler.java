@@ -289,15 +289,15 @@ public class AdminHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid type"));
             return;
         }
-        if (req.getValue() == null) {
+        if (req.getValue() == null || req.getValue() <= 0) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid value"));
             return;
         }
-        if (req.getMinPrice() == null) {
+        if (req.getMinPrice() == null || req.getMinPrice() < 0) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid min_price"));
             return;
         }
-        if (req.getUserCount() == null) {
+        if (req.getUserCount() == null  || req.getUserCount() < 0) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid user_count"));
             return;
         }
@@ -323,9 +323,8 @@ public class AdminHandler implements HttpHandler {
                 return;
             }
 
-            //  این بخش رو باید برای هر فیلد بعدا جدا کنیم
-            if (req.getValue() <= 0 || (couponType == CouponType.PERCENT && req.getValue() > 100) || req.getMinPrice() < 0 || req.getUserCount() < 0) {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid numeric values for coupon (value, minPrice, userCount). Percent value should be between 0 and 100."));
+            if (couponType == CouponType.PERCENT && req.getValue() > 100) {
+                JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid value"));
                 return;
             }
 
