@@ -7,7 +7,6 @@ import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import dto.CouponRequest;
-import dto.RegisterRequest;
 import dto.UserInfo;
 import dto.UserStatusRequest;
 import entity.*;
@@ -22,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,122 +32,184 @@ public class AdminHandler implements HttpHandler {
             .create();
 
     @Override
-    public void handle(HttpExchange ex) throws IOException {   //  تنها تغیری که توی کد های هادی دادم عوض کردن پرتاب اکسپشن برای متد ها بود
-        String method = ex.getRequestMethod();
-        String path = ex.getRequestURI().getPath();
-        if (method.equalsIgnoreCase("GET") && path.equals("/admin/users")) {
-            handleGetUsers(ex);
-            return;
-        }
-        if ("PATCH".equalsIgnoreCase(method) && path.matches("^/admin/users/\\d+/status$")) {
-            String[] parts = path.split("/");
-            String idStr = parts[3];
-            long userId = Long.parseLong(idStr);
-            handleUpdateUserStatus(ex, String.valueOf(userId));
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.equals("/admin/orders")) {
-            handleGetOrders(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.equals("/admin/transactions")) {
-            handleGetTransactions(ex);
-            return;
-        }
+    public void handle(HttpExchange ex) throws IOException {
+        try {
+            String auth;
+            try {
+                auth = ex.getRequestHeaders().getFirst("Authorization");
+            } catch (Exception e) {
+                JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+                return;
+            }
+            String token = auth.substring(7);
+            String method = ex.getRequestMethod();
+            String path = ex.getRequestURI().getPath();
+            if (method.equalsIgnoreCase("GET") && path.equals("/admin/users")) {
+                handleGetUsers(ex,token);
+                return;
+            }
+            if ("PATCH".equalsIgnoreCase(method) && path.matches("^/admin/users/\\d+/status$")) {
+                String[] parts = path.split("/");
+                String idStr = parts[3];
+                long userId = Long.parseLong(idStr);
+                handleUpdateUserStatus(ex, String.valueOf(userId),token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.equals("/admin/orders")) {
+                handleGetOrders(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.equals("/admin/transactions")) {
+                handleGetTransactions(ex,token);
+                return;
+            }
 
-        // 5 دستور آخر ادمین برای من
-        if ("POST".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
-            handleCreateCoupon(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
-            handleListCoupons(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleGetCouponDetails(ex);
-            return;
-        }
-        if ("PUT".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleUpdateCoupon(ex);
-            return;
-        }
-        if ("DELETE".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
-            handleDeleteCoupon(ex);
-            return;
-        }
 
-        ex.sendResponseHeaders(404, -1);
+            if ("POST".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
+                handleCreateCoupon(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && "/admin/coupons".equals(path)) {
+                handleListCoupons(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
+                handleGetCouponDetails(ex,token);
+                return;
+            }
+            if ("PUT".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
+                handleUpdateCoupon(ex,token);
+                return;
+            }
+            if ("DELETE".equalsIgnoreCase(method) && path.matches("/admin/coupons/\\d+")) {
+                handleDeleteCoupon(ex,token);
+                return;
+            }
+
+            ex.sendResponseHeaders(404, -1);
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
     }
 
-    private void handleGetTransactions(HttpExchange ex) throws IOException {
-        String query = ex.getRequestURI().getQuery();
-        Map<String, String> params = splitQuery.splitQuery(query);
+    private void handleGetTransactions(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex, "ADMIN", token)) return;
+
+        Map<String, String> params = splitQuery.splitQuery(ex.getRequestURI().getQuery());
         String search = params.get("search");
-        String user = params.get("user");
+        String user   = params.get("user");
         String method = params.get("method");
         String status = params.get("status");
+
         StringBuilder hql = new StringBuilder("FROM Transaction t WHERE 1=1");
-        if (search != null) hql.append(" AND cast(t.id as string) LIKE :search");
-        if (user != null) hql.append(" AND t.user.id = :userId");
-        if (method != null) hql.append(" AND t.method = :method");
-        if (status != null) hql.append(" AND t.status = :status");
+        if (search != null && !search.isBlank()) {
+            hql.append(" AND cast(t.id as string) LIKE :search");
+        }
+        if (user != null && !user.isBlank()) {
+            hql.append(" AND t.user.id = :userId");
+        }
+        if (method != null && !method.isBlank()) {
+            hql.append(" AND t.method = :method");
+        }
+        if (status != null && !status.isBlank()) {
+            hql.append(" AND t.status = :status");
+        }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<entity.Transaction> q = session.createQuery(hql.toString(), entity.Transaction.class);
-            if (search != null) q.setParameter("search", "%" + search + "%");
-            if (user != null) q.setParameter("userId", Long.parseLong(user));
-            if (method != null) q.setParameter("method", TransactionType.valueOf(method.toUpperCase()));
-            if (status != null) q.setParameter("status", TransactionStatus.valueOf(status.toUpperCase()));
+
+            if (search != null && !search.isBlank()) {
+                q.setParameter("search", "%" + search.trim() + "%");
+            }
+            if (user != null && !user.isBlank()) {
+                q.setParameter("userId", Long.parseLong(user));
+            }
+            if (method != null && !method.isBlank()) {
+                q.setParameter("method", TransactionType.valueOf(method.trim().toUpperCase()));
+            }
+            if (status != null && !status.isBlank()) {
+                q.setParameter("status", TransactionStatus.valueOf(status.trim().toUpperCase()));
+            }
+
             List<entity.Transaction> txs = q.list();
             List<TransactionResponse> resp = txs.stream()
                     .map(TransactionResponse::new)
-                    .collect(Collectors.toList());
+                    .toList();
+
             JsonHelper.sendJson(ex, 200, resp);
+        } catch (NumberFormatException nfe) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid numeric filter"));
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, Map.of("error", "Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
-    private void handleGetOrders(HttpExchange ex) throws IOException {
-        String query = ex.getRequestURI().getQuery();
-        Map<String, String> params = splitQuery.splitQuery(query);
-        String search = params.get("search");
-        String vendor = params.get("vendor");
-        String courier = params.get("courier");
-        String customer = params.get("customer");
-        String status = params.get("status");
 
-        StringBuilder hql = new StringBuilder("From Order o WHERE 1=1");
-        if (search != null) hql.append(" AND (cast(o.id as string) LIKE :search OR o.deliveryAddress LIKE :search)");
-        if (vendor != null) hql.append(" AND o.restaurant.id = :vendor");
-        if (courier != null) hql.append(" AND o.courierId = :courier");
-        if (customer != null) hql.append(" AND o.user.id = :customer");
-        if (status != null) hql.append(" AND o.status = :status");
+    private void handleGetOrders(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex, "ADMIN", token)) return;
+
+        Map<String, String> params = splitQuery.splitQuery(ex.getRequestURI().getQuery());
+        String search   = params.get("search");
+        String vendorId = params.get("vendor");
+        String courier  = params.get("courier");
+        String customer = params.get("customer");
+        String status   = params.get("status");
+
+        StringBuilder hql = new StringBuilder("FROM Order o WHERE 1=1");
+        if (search != null && !search.isBlank()) {
+            hql.append(" AND (cast(o.id as string) LIKE :search")
+                    .append(" OR o.deliveryAddress LIKE :search)");
+        }
+        if (vendorId != null && !vendorId.isBlank()) {
+            hql.append(" AND cast(o.restaurant.id as string) LIKE :vendor");
+        }
+        if (courier != null && !courier.isBlank()) {
+            hql.append(" AND cast(o.courierId as string) LIKE :courier");
+        }
+        if (customer != null && !customer.isBlank()) {
+            hql.append(" AND cast(o.user.id as string) LIKE :customer");
+        }
+        if (status != null && !status.isBlank()) {
+            hql.append(" AND cast(o.status as string) LIKE :status");
+        }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<entity.Order> queryObj = session.createQuery(hql.toString(), entity.Order.class);
-            if (search != null) queryObj.setParameter("search", "%" + search + "%");
-            if (vendor != null) queryObj.setParameter("vendor", Integer.parseInt(vendor));
-            if (courier != null) queryObj.setParameter("courier", Integer.parseInt(courier));
-            if (customer != null) queryObj.setParameter("customer", Integer.parseInt(customer));
-            if (status != null) queryObj.setParameter("status", OrderStatus.valueOf(status.toUpperCase()));
+            Query<entity.Order> q = session.createQuery(hql.toString(), entity.Order.class);
 
-            List<Order> orders = queryObj.list();
+            if (search != null && !search.isBlank()) {
+                q.setParameter("search", "%" + search.trim() + "%");
+            }
+            if (vendorId != null && !vendorId.isBlank()) {
+                q.setParameter("vendor", "%" + vendorId.trim() + "%");
+            }
+            if (courier != null && !courier.isBlank()) {
+                q.setParameter("courier", "%" + courier.trim() + "%");
+            }
+            if (customer != null && !customer.isBlank()) {
+                q.setParameter("customer", "%" + customer.trim() + "%");
+            }
+            if (status != null && !status.isBlank()) {
+                q.setParameter("status", "%" + status.trim().toUpperCase() + "%");
+            }
 
+            List<entity.Order> orders = q.list();
             List<OrderResponse> resp = orders.stream()
                     .map(OrderResponse::new)
-                    .collect(Collectors.toList());
-            JsonHelper.sendJson(ex, 200, resp);
+                    .toList();
 
+            JsonHelper.sendJson(ex, 200, resp);
+        } catch (NumberFormatException nfe) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid numeric filter"));
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
 
-    private void handleUpdateUserStatus(HttpExchange ex, String path) throws IOException {
+    private void handleUpdateUserStatus(HttpExchange ex, String path, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         long userId = Long.parseLong(path);
         UserStatusRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
@@ -185,14 +245,8 @@ public class AdminHandler implements HttpHandler {
         JsonHelper.sendJson(ex, 200, new MessageResponse("Status updated"));
     }
 
-    private void handleGetUsers(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-        if (!Objects.equals(JwtUtil.getRoleFromToken(token), Role.ADMIN.name())) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-            return;
-        }
+    private void handleGetUsers(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<User> users = session
                     .createQuery("FROM User", User.class)
@@ -206,16 +260,11 @@ public class AdminHandler implements HttpHandler {
         }
     }
 
-    private void handleCreateCoupon(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
 
-        if (!Role.ADMIN.name().equals(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Admin access required."));
-            return;
-        }
 
+
+    private void handleCreateCoupon(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         CouponRequest req = null;
         try {
             req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8), CouponRequest.class);
@@ -232,7 +281,6 @@ public class AdminHandler implements HttpHandler {
             return;
         }
 
-        // اعتبارسنجی فیلدهای الزامی از CouponRequest
         if (req.getCouponCode() == null || req.getCouponCode().trim().isEmpty() ||
                 req.getType() == null || req.getType().trim().isEmpty() ||
                 req.getValue() == null ||
@@ -245,7 +293,6 @@ public class AdminHandler implements HttpHandler {
         }
 
 
-        // بررسی شرایط منطقی برای هر فیلد
         CouponType couponType;
         LocalDate startDate, endDate;
         try {
@@ -308,16 +355,8 @@ public class AdminHandler implements HttpHandler {
         }
     }
 
-    private void handleListCoupons(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        if (!Role.ADMIN.name().equals(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Admin access required."));
-            return;
-        }
-
+    private void handleListCoupons(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Coupon> coupons = session.createQuery("FROM Coupon", Coupon.class).list();
             List<CouponResponse> couponResponses = coupons.stream()
@@ -330,21 +369,13 @@ public class AdminHandler implements HttpHandler {
         }
     }
 
-    private void handleGetCouponDetails(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        if (!Role.ADMIN.name().equals(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Admin access required."));
-            return;
-        }
-
+    private void handleGetCouponDetails(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");
         Integer couponId;
         try {
-            if (parts.length > 3) { // بررسی دارا بودن شرایط دستور های داده شده
+            if (parts.length > 3) {
                 couponId = Integer.parseInt(parts[3]);
             } else {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("Coupon ID missing in path."));
@@ -357,7 +388,7 @@ public class AdminHandler implements HttpHandler {
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Coupon coupon = session.get(Coupon.class, couponId);
-            if (coupon == null) {  //  کوپنی با این ایدی نداشتیم
+            if (coupon == null) {
                 JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon not found."));
                 return;
             }
@@ -369,21 +400,13 @@ public class AdminHandler implements HttpHandler {
     }
 
 
-    private void handleUpdateCoupon(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        if (!Role.ADMIN.name().equals(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Admin access required."));
-            return;
-        }
-
+    private void handleUpdateCoupon(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");
         Integer couponId;
         try {
-            if (parts.length > 3) {  // بررسی دارا بودن شرایط دستور های داده شده
+            if (parts.length > 3) {
                 couponId = Integer.parseInt(parts[3]);
             } else {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("Coupon ID missing in path."));
@@ -397,7 +420,7 @@ public class AdminHandler implements HttpHandler {
         CouponRequest req = null;
         try {
             req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8), CouponRequest.class);
-            if (req == null) { // بدنه درخواست نباید خالی باشد برای آپدیت
+            if (req == null) {
                 JsonHelper.sendJson(ex, 400, new MessageResponse("Request body is empty or malformed."));
                 return;
             }
@@ -420,9 +443,7 @@ public class AdminHandler implements HttpHandler {
                 return;
             }
 
-            // اعمال تغیرات داده شده
             if (req.getCouponCode() != null && !req.getCouponCode().trim().isEmpty()) {
-                // بررسی یکتا بودن کد جدید اگر تغییر کرده است
                 if (!coupon.getCouponCode().equals(req.getCouponCode())) {
                     Query<Long> existingCouponQuery = session.createQuery("SELECT count(c.id) FROM Coupon c WHERE c.couponCode = :code AND c.id != :currentId", Long.class);
                     existingCouponQuery.setParameter("code", req.getCouponCode());
@@ -478,7 +499,6 @@ public class AdminHandler implements HttpHandler {
             if (newStartDate != null) coupon.setStartDate(newStartDate);
             if (newEndDate != null) coupon.setEndDate(newEndDate);
 
-            // بررسی مقدار های عددی
             Double valueToCheck = req.getValue() != null ? req.getValue() : coupon.getValue();
             CouponType typeToCheck = req.getType() != null ? CouponType.valueOf(req.getType().toUpperCase()) : coupon.getType();
             Integer minPriceToCheck = req.getMinPrice() != null ? req.getMinPrice() : coupon.getMinPrice();
@@ -506,15 +526,8 @@ public class AdminHandler implements HttpHandler {
     }
 
 
-    private void handleDeleteCoupon(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        if (!Role.ADMIN.name().equals(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Admin access required."));
-            return;
-        }
+    private void handleDeleteCoupon(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
 
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");

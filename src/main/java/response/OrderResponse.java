@@ -18,11 +18,11 @@ public class OrderResponse {
     private int customer_id;
     private int vendor_id;
     private List<OrderItem> items;
-    private int raw_price;
+    private Long raw_price;
     private int tax_fee;
     private int additional_fee;
     private int courier_fee;
-    private int pay_price;
+    private Double pay_price;
     private int courier_id;
     private OrderStatus status;
     private String createdAt;

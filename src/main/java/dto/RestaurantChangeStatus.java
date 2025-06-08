@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResChangeStatus {
+public class RestaurantChangeStatus {
     private String Status;
 }

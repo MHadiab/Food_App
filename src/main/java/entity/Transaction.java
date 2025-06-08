@@ -22,5 +22,4 @@ public class Transaction {
     private TransactionStatus status;
     @ManyToOne private User user;
     @OneToOne private Order order;
-    private String description;
 }

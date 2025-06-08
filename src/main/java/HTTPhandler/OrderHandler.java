@@ -9,7 +9,7 @@ import dto.PaymentRequest;
 import dto.WalletTopUpRequest;
 import entity.*;
 import org.hibernate.Session;
-import response.ErrorResponse;
+import org.hibernate.query.Query;
 import response.ErrorResponse;
 import response.MessageResponse;
 import response.TransactionResponse;
@@ -30,40 +30,65 @@ public class OrderHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        String path = ex.getRequestURI().getPath();
-        String method = ex.getRequestMethod();
-        if ("GET".equalsIgnoreCase(method) && path.equals("/transactions")) {
-            handleGetTransactions(ex);
-        } else if ("POST".equalsIgnoreCase(method) && path.equals("/wallet/top-up")) {
-            handleWalletTopUp(ex);
-        } else if ("PUT".equalsIgnoreCase(method) && path.equals("/payment/online")) {
-            handleOnlinePayment(ex);
-        } else {
-            ex.sendResponseHeaders(404, -1);
+        try {
+            String auth;
+            try {
+                auth = ex.getRequestHeaders().getFirst("Authorization");
+            } catch (Exception e) {
+                JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+                return;
+            }
+            String token = auth.substring(7);
+            String path = ex.getRequestURI().getPath();
+            String method = ex.getRequestMethod();
+            if ("GET".equalsIgnoreCase(method) && path.equals("/transactions")) {
+                handleGetTransactions(ex,token);
+            } else if ("POST".equalsIgnoreCase(method) && path.equals("/wallet/top-up")) {
+                handleWalletTopUp(ex,token);
+            } else if ("PUT".equalsIgnoreCase(method) && path.equals("/payment/online")) {
+                handleOnlinePayment(ex,token);
+            } else {
+                ex.sendResponseHeaders(404, -1);
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
 
-    private void handleOnlinePayment(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-        if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
+    private void handleOnlinePayment(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+        PaymentRequest req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), UTF_8), PaymentRequest.class);
+        if(req == null){
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("invalid request"));
             return;
         }
-        PaymentRequest req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), UTF_8), PaymentRequest.class);
-        if (req.getOrder_id() == null || req.getMethod() == null) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
+        if(req.getOrder_id() == null){
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("invalid order_id"));
             return;
+        }
+        if(req.getMethod()==null){
+            JsonHelper.sendJson(ex, 401, new ErrorResponse("invalid method"));
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             org.hibernate.Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, req.getOrder_id());
             if (order == null) {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid input"));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid order_id"));
                 return;
             }
             User user = order.getUser();
+            Query<Transaction> existing = session.createQuery(
+                    "FROM Transaction t WHERE t.order.id = :orderId AND t.status = :success",
+                    Transaction.class
+            );
+            existing.setParameter("orderId", order.getId());
+            existing.setParameter("success", TransactionStatus.SUCCESS);
+            if (!existing.list().isEmpty()) {
+                JsonHelper.sendJson(ex, 409, new ErrorResponse("Payment already processed for this order"));
+                return;
+            }
+
             if (req.getMethod().equalsIgnoreCase("wallet")) {
                 if (user.getBalance() < order.getPayPrice()) {
                     JsonHelper.sendJson(ex, 400, new MessageResponse("Insufficient balance"));
@@ -84,20 +109,14 @@ public class OrderHandler implements HttpHandler {
             tx.commit();
             JsonHelper.sendJson(ex, 200, tr);
         } catch (Exception e) {
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal Server Error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
 
-    private void handleWalletTopUp(HttpExchange ex) throws IOException {
+    private void handleWalletTopUp(HttpExchange ex, String token) throws IOException {
 
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         Long UserId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
-        if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
-            return;
-        }
         WalletTopUpRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), UTF_8),
                 WalletTopUpRequest.class
@@ -130,10 +149,8 @@ public class OrderHandler implements HttpHandler {
 
     }
 
-    private void handleGetTransactions(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
+    private void handleGetTransactions(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         Long userId = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Transaction> txs = session.createQuery(
@@ -143,12 +160,10 @@ public class OrderHandler implements HttpHandler {
             List<TransactionResponse> resp = txs.stream()
                     .map(TransactionResponse::new)
                     .collect(Collectors.toList());
-
-
             JsonHelper.sendJson(ex, 200, resp);
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server Error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server Error"));
         }
     }
 }

@@ -34,11 +34,11 @@ public class Order {
     )
     private List<OrderItem> items = new ArrayList<>();
 
-    private int rawPrice;
+    private Long rawPrice;
     private int taxFee;
     private int additionalFee;
     private int courierFee;
-    private int payPrice;
+    private Double payPrice;
 
     @Column(nullable = true)
     private Integer courierId=0;

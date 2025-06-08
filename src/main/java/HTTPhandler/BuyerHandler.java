@@ -19,7 +19,6 @@ import util.HibernateUtil;
 import util.JsonHelper;
 import util.JwtUtil;
 
-import javax.sound.midi.MidiFileFormat;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -37,111 +36,112 @@ public class BuyerHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        String method = ex.getRequestMethod();
-        String path = ex.getRequestURI().getPath();
-        if ("POST".equalsIgnoreCase(method) && path.equals("/orders")) {
-            handleCreateOrder(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.matches("^/orders/\\d+$")) {
-            handleGetOrderDetail(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.equals("/orders/history")) {
-            handleOrderHistory(ex);
-            return;
-        }
-        if ("PUT".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
-            String[] parts = path.split("/");
-            if (parts.length != 3) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+        try{
+            String auth;
+            try {
+                auth = ex.getRequestHeaders().getFirst("Authorization");
+            } catch (Exception e) {
+                JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
                 return;
             }
-            String idStr = parts[2];
-            long vendor_id = Long.parseLong(idStr);
-            handleCreateFavorite(ex, vendor_id);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.equals("/favorites")) {
-            handleGetFavorites(ex);
-            return;
-        }
-        if ("DELETE".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
-            String[] parts = path.split("/");
-            if (parts.length != 3) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
-                return;
-            }
-            String idStr = parts[2];
-            long vendor_id = Long.parseLong(idStr);
-            handleDeleteFavorite(ex, vendor_id);
-            return;
-        }
-        if ("POST".equalsIgnoreCase(method) && path.equals("/ratings")) {
-            handleCreateRate(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.matches("^/ratings/items/\\d+$")) {
-            String[] parts = path.split("/");
-            if (parts.length != 4) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
-                return;
-            }
-            String itemId = parts[3];
-            handleGetRateOfItem(ex, itemId);
-            return;
-        }
-        if ("POST".equalsIgnoreCase(method) && "/vendors".equals(path)) {
-            handleListVendors(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.matches("/vendors/\\d+")) {
-            handleGetVendorDetails(ex);
-            return;
-        }
-        if ("POST".equalsIgnoreCase(method) && "/items".equals(path)) {
-            handleListItems(ex);
-            return;
-        }
-        if ("GET".equalsIgnoreCase(method) && path.matches("/items/\\d+")) {
-            handleGetItemDetails(ex);
-            return;
-        }
-        // دستور بررسی اعتبار کوپن
-        if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
-            handleCheckCouponValidity(ex);
-        }
+            String token = auth.substring(7);
+            String method = ex.getRequestMethod();
+            String path = ex.getRequestURI().getPath();
 
-        // سه دستور اخر بایر برای من
-        if ("GET".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
-            handleGetRatingDetails(ex);
-            return;
+            if ("POST".equalsIgnoreCase(method) && path.equals("/orders")) {
+                handleCreateOrder(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("^/orders/\\d+$")) {
+                handleGetOrderDetail(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.equals("/orders/history")) {
+                handleOrderHistory(ex,token);
+                return;
+            }
+            if ("PUT".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
+                String[] parts = path.split("/");
+                if (parts.length != 3) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+                    return;
+                }
+                String idStr = parts[2];
+                long vendor_id = Long.parseLong(idStr);
+                handleCreateFavorite(ex, vendor_id,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.equals("/favorites")) {
+                handleGetFavorites(ex,token);
+                return;
+            }
+            if ("DELETE".equalsIgnoreCase(method) && path.matches("^/favorites/\\d+$")) {
+                String[] parts = path.split("/");
+                if (parts.length != 3) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+                    return;
+                }
+                String idStr = parts[2];
+                long vendor_id = Long.parseLong(idStr);
+                handleDeleteFavorite(ex, vendor_id,token);
+                return;
+            }
+            if ("POST".equalsIgnoreCase(method) && path.equals("/ratings")) {
+                handleCreateRate(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("^/ratings/items/\\d+$")) {
+                String[] parts = path.split("/");
+                if (parts.length != 4) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid input"));
+                    return;
+                }
+                String itemId = parts[3];
+                handleGetRateOfItem(ex, itemId,token);
+                return;
+            }
+            if ("POST".equalsIgnoreCase(method) && "/vendors".equals(path)) {
+                handleListVendors(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("/vendors/\\d+")) {
+                handleGetVendorDetails(ex,token);
+                return;
+            }
+            if ("POST".equalsIgnoreCase(method) && "/items".equals(path)) {
+                handleListItems(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("/items/\\d+")) {
+                handleGetItemDetails(ex,token);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
+                handleCheckCouponValidity(ex,token);
+            }
+            if ("GET".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+                handleGetRatingDetails(ex,token);
+                return;
+            }
+            if ("DELETE".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+                handleDeleteRating(ex,token);
+                return;
+            }
+            if ("PUT".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
+                handleUpdateRating(ex,token);
+                return;
+            }
+            ex.sendResponseHeaders(404, -1);
+        }catch (Exception e){
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
-        if ("DELETE".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
-            handleDeleteRating(ex);
-            return;
-        }
-        if ("PUT".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
-            handleUpdateRating(ex);
-            return;
-        }
-        ex.sendResponseHeaders(404, -1);
     }
 
-    private void handleGetRateOfItem(HttpExchange ex, String itemId) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        // اگر لازم است فقط خریداران (BUYER) بتوانند این متد را فراخوانی کنند:
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-            return;
-        }
+    private void handleGetRateOfItem(HttpExchange ex, String itemId,String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // ابتدا مطمئن می‌شویم itemId یک عدد صحیح است و آن آیتم واقعا وجود دارد
             int intItemId;
             try {
                 intItemId = Integer.parseInt(itemId);
@@ -156,15 +156,12 @@ public class BuyerHandler implements HttpHandler {
                 return;
             }
 
-            // HQL: دقت کنید i از نوع Integer است
             String hql = "SELECT r FROM Rating r JOIN r.itemIds i WHERE i = :id";
             Query<Rating> reviewsQuery = session.createQuery(hql, Rating.class);
             reviewsQuery.setParameter("id", intItemId); // ← همین‌جا Integer بدهید، نه Long
 
-            // بگیریم لیست ریویوها را
             List<Rating> ratingList = reviewsQuery.list();
 
-            // اگر هیچ ریویویی نبود، پاسخ بدهیم
             if (ratingList.isEmpty()) {
                 Map<String, Object> emptyResponse = new LinkedHashMap<>();
                 emptyResponse.put("avg_rating", 0.0);
@@ -173,7 +170,6 @@ public class BuyerHandler implements HttpHandler {
                 return;
             }
 
-            // تبدیل به RateResponse و محاسبه total
             List<RateResponse> comments = ratingList.stream()
                     .map(RateResponse::new)
                     .toList();
@@ -186,7 +182,6 @@ public class BuyerHandler implements HttpHandler {
 
             double average = (double) total / comments.size();
 
-            // ساخت Map<String,Object> با کلیدهای مناسب
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("avg_rating", average);
             response.put("comments", comments);
@@ -194,25 +189,18 @@ public class BuyerHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 200, response);
 
         } catch (Exception e) {
-            // این‌جا هر استثنای دیگری (از جمله IllegalArgumentException‌ که ممکن بود پیش بیاید) را بگیریم
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
 
-    private void handleCreateRate(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
+    private void handleCreateRate(HttpExchange ex, String token) throws IOException {
 
-        // فقط خریداران می‌توانند امتیاز دهند
-        if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-            return;
-        }
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
+
         String userId = JwtUtil.getUserIdFromToken(token);
-
         RateRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), UTF_8),
                 RateRequest.class
@@ -259,7 +247,6 @@ public class BuyerHandler implements HttpHandler {
             existing.setParameter("orderId", req.getOrder_id());
             existing.setParameter("userId", user.getUser_id());
             if (!existing.list().isEmpty()) {
-                // یعنی رکوردی هست؛ پس به کاربر بگویید قبلاً ثبت کرده
                 JsonHelper.sendJson(ex, 400, new ErrorResponse("You have already rated this order."));
                 return;
             }
@@ -273,20 +260,17 @@ public class BuyerHandler implements HttpHandler {
             }
             rating.setCreated_at(LocalDateTime.now());
 
-            // اگر req.getImageBase64() نال بود، از لیست خالی استفاده کن:
             if (req.getImageBase64() != null) {
                 rating.setImageBase64(new ArrayList<>(req.getImageBase64()));
             } else {
                 rating.setImageBase64(new ArrayList<>());
             }
 
-            // پرکردن itemIds از روی آیتم‌های خود سفارش
             for (OrderItem orderItem : order.getItems()) {
                 Integer itemId = orderItem.getItemId();
                 rating.getItemIds().add(Long.valueOf(itemId));
             }
 
-            // حالا حتماً Rating را ذخیره کن و تراکنش را commit کن
             session.persist(rating);
             tx.commit();
 
@@ -298,10 +282,8 @@ public class BuyerHandler implements HttpHandler {
     }
 
 
-    private void handleDeleteFavorite(HttpExchange ex, long vendorId) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
+    private void handleDeleteFavorite(HttpExchange ex, long vendorId, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         long userId = Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
@@ -326,11 +308,12 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleGetFavorites(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
+    private void handleGetFavorites(HttpExchange ex, String token) throws IOException {
+
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
         long userId = Long.parseLong(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
             User user = session.get(User.class, userId);
@@ -345,14 +328,9 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleCreateFavorite(HttpExchange ex, long vendor_id) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-        if (!Objects.requireNonNull(JwtUtil.getRoleFromToken(token)).equalsIgnoreCase("buyer")) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
-            return;
-        }
+    private void handleCreateFavorite(HttpExchange ex, long vendor_id, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
             Restaurant restaurant = (Restaurant) session.get(Restaurant.class, vendor_id);
@@ -372,15 +350,9 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleOrderHistory(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: Only buyers can view order history"));
-            return;
-        }
+    private void handleOrderHistory(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
         String userIdStr = JwtUtil.getUserIdFromToken(token);
         if (userIdStr == null) {
             JsonHelper.sendJson(ex, 401, new ErrorResponse("Invalid or expired token"));
@@ -432,14 +404,9 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleGetOrderDetail(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-        if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
-            JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden"));
-            return;
-        }
+    private void handleGetOrderDetail(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
         String[] parts = ex.getRequestURI().getPath().split("/");
         if (parts.length < 3) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid id"));
@@ -463,9 +430,7 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleCreateOrder(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
+    private void handleCreateOrder(HttpExchange ex, String token) throws IOException {
 
         if (ErrorHandler.FindError(ex, token)) return;
         if (!"BUYER".equalsIgnoreCase(JwtUtil.getRoleFromToken(token))) {
@@ -481,9 +446,9 @@ public class BuyerHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid items"));
             return;
         }
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             org.hibernate.Transaction tx = session.beginTransaction();
-
             Restaurant restaurant = session.get(Restaurant.class, req.getVendor_id());
             if (restaurant == null) {
                 JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid vendor_id"));
@@ -493,7 +458,7 @@ public class BuyerHandler implements HttpHandler {
             User user = session.get(User.class, JwtUtil.getUserIdFromToken(token));
 
             List<OrderItem> orderItems = new ArrayList<>();
-            double totalRawPrice = 0.0;
+            long totalRawPrice = 0;
 
             for (OrderItemDTO dto : req.getItems()) {
                 if (dto.getItem_id() == null) {
@@ -514,10 +479,29 @@ public class BuyerHandler implements HttpHandler {
                     ));
                     return;
                 }
-                double unitPrice = foodItem.getPrice(); // در صورت BigDecimal: foodItem.getPrice().doubleValue()
+                double unitPrice = foodItem.getPrice();
                 int qty = dto.getQuantity();
-                totalRawPrice += unitPrice * qty;
+                totalRawPrice += (long) (unitPrice * qty);
                 orderItems.add(new OrderItem(itemId, qty));
+            }
+            Double coupon_discount=0.0;
+            if (req.getCoupon_id() != null && req.getCoupon_id() > 0) {
+                Query<Coupon> query = session.createQuery("FROM Coupon c WHERE c.couponCode = :code", Coupon.class);
+                query.setParameter("code", req.getCoupon_id().toString().trim());
+                Coupon coupon = query.uniqueResult();
+                if (coupon != null){
+                    LocalDate today = LocalDate.now();
+                    if(coupon.isActive() && !today.isBefore(coupon.getStartDate()) && !today.isAfter(coupon.getEndDate())
+                            && (coupon.getTimesUsed() != null && coupon.getUserCount() != null && coupon.getTimesUsed() < coupon.getUserCount())){
+                        coupon.setTimesUsed(coupon.getTimesUsed() + 1);
+                        session.merge(coupon);
+                        if(coupon.getType()==CouponType.FIXED){
+                            coupon_discount=coupon.getValue();
+                        } else if (coupon.getType()==CouponType.PERCENT) {
+                            coupon_discount= totalRawPrice * coupon.getValue() / 100;
+                        }
+                    }
+                }
             }
             Order order = new Order();
             order.setDeliveryAddress(user.getAddress());
@@ -525,13 +509,13 @@ public class BuyerHandler implements HttpHandler {
             order.setRestaurant(restaurant);
 
             order.setItems(orderItems);
-            order.setRawPrice((int) totalRawPrice);
+            order.setRawPrice((totalRawPrice));
 
             order.setTaxFee(restaurant.getTax_fee());
             order.setAdditionalFee(restaurant.getAdditional_fee());
             order.setCourierFee(0);
 
-            order.setPayPrice((int) totalRawPrice + restaurant.getTax_fee() + restaurant.getAdditional_fee());
+            order.setPayPrice(( totalRawPrice + restaurant.getTax_fee() + restaurant.getAdditional_fee() - coupon_discount));
 
             order.setStatus(OrderStatus.SUBMITTED);
             order.setCreatedAt(LocalDateTime.now());
@@ -546,16 +530,8 @@ public class BuyerHandler implements HttpHandler {
         }
     }
 
-    private void handleListVendors(HttpExchange ex) throws IOException, IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can list vendors."));
-            return;
-        }
+    private void handleListVendors(HttpExchange ex, String token) throws IOException, IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         VendorFilterRequest filterRequest = null;
         String contentLengthHeader = ex.getRequestHeaders().getFirst("Content-Length");
@@ -564,23 +540,13 @@ public class BuyerHandler implements HttpHandler {
                 InputStreamReader reader = new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8);
                 filterRequest = GSON.fromJson(reader, VendorFilterRequest.class);
                 if (filterRequest == null && Integer.parseInt(contentLengthHeader) > 0) {
-                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body for vendor filter (empty or malformed)."));
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON body for vendor filter (empty or malformed)."));
                     return;
                 }
             }
-        } catch (IOException e) { // خطای خواندن از بدنه درخواست
+        } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error reading request body for vendor filter."));
-            return;
-        } catch (NumberFormatException e) { // خطای تبدیل Content-Length به عدد
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid Content-Length header for vendor filter."));
-            return;
-        } catch (JsonSyntaxException e) { // خطای پارس کردن JSON
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON syntax in request body for vendor filter."));
-            return;
-        } catch (Exception e) { // سایر خطا
-            e.printStackTrace();
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Error processing request body for vendor filter."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Internal Server Error"));
             return;
         }
 
@@ -621,21 +587,12 @@ public class BuyerHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 200, vendorResponses);
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error fetching vendors."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Error fetching vendors."));
         }
     }
 
-    private void handleGetVendorDetails(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can view vendor details."));
-            return;
-        }
-
+    private void handleGetVendorDetails(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");
         Integer vendorId;
@@ -643,71 +600,55 @@ public class BuyerHandler implements HttpHandler {
             if (parts.length > 2) {
                 vendorId = Integer.parseInt(parts[2]);
             } else {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Vendor ID missing in path. Expected /vendors/{id}"));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Vendor ID missing in path. Expected /vendors/{id}"));
                 return;
             }
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid vendor ID format in path. Must be a number."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid vendor ID format in path. Must be a number."));
             return;
         }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Restaurant restaurant = session.get(Restaurant.class, vendorId);
             if (restaurant == null || !restaurant.isActive()) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Vendor not found or not active."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Vendor not found or not active."));
                 return;
             }
 
-            // ۲.۱. ابتدا یک Map مرتب بساز (LinkedHashMap برای حفظ ترتیب insertion)
             Map<String, Object> responseMap = new LinkedHashMap<>();
 
-            // ۲.۲. "vendor" را با RestaurantResponse پر می‌کنیم
             responseMap.put("vendor", new RestaurantResponse(restaurant));
 
-            // ۲.۳. کوئری گرفتن منوها به ترتیبی که می‌خواهیم
             Query<Menu> menuQuery = session.createQuery(
                     "SELECT DISTINCT m FROM Menu m LEFT JOIN FETCH m.items item WHERE m.restaurant.id = :restaurantId ORDER BY m.title",
                     Menu.class);
             menuQuery.setParameter("restaurantId", vendorId);
             List<Menu> menusFromDb = menuQuery.list();
 
-            // ۲.۴. لیست عناوین منو
             List<String> menuTitles = menusFromDb.stream()
                     .map(Menu::getTitle)
                     .collect(Collectors.toList());
             responseMap.put("menu_titles", menuTitles);
 
-            // ۲.۵. حالا هر منو را به شکل کلیدی به همان نامِ title در Map می‌ریزیم
             for (Menu menu : menusFromDb) {
-                // لیست آیتم‌های فعال را با responder می‌سازیم
                 List<FoodItemResponse> activeItemResponses = menu.getItems().stream()
                         .filter(FoodItem::isActive)
                         .map(FoodItemResponse::new)
                         .collect(Collectors.toList());
 
-                // کلید در JSON دقیقاً برابر عنوانِ منو (مثلا "reza_menu") باشد
                 responseMap.put(menu.getTitle(), activeItemResponses);
             }
 
-            // ۲.۶. در نهایت JSON را برگردانیم
             JsonHelper.sendJson(ex, 200, responseMap);
 
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error fetching vendor details: " + e.getMessage()));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Error fetching vendor details: " + e.getMessage()));
         }
     }
 
-    private void handleListItems(HttpExchange ex) throws IOException, IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can list items."));
-            return;
-        }
+    private void handleListItems(HttpExchange ex, String token) throws IOException, IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         ItemFilterRequest filterRequest = null;
         String contentLengthHeader = ex.getRequestHeaders().getFirst("Content-Length");
@@ -716,23 +657,23 @@ public class BuyerHandler implements HttpHandler {
                 InputStreamReader reader = new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8);
                 filterRequest = GSON.fromJson(reader, ItemFilterRequest.class);
                 if (filterRequest == null && Integer.parseInt(contentLengthHeader) > 0) {
-                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body for item filter (empty or malformed)."));
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON body for item filter (empty or malformed)."));
                     return;
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error reading request body for item filter."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Error reading request body for item filter."));
             return;
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid Content-Length header for item filter."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid Content-Length header for item filter."));
             return;
         } catch (JsonSyntaxException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON syntax in request body for item filter."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON syntax in request body for item filter."));
             return;
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Error processing request body for item filter."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Error processing request body for item filter."));
             return;
         }
 
@@ -772,20 +713,12 @@ public class BuyerHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 200, itemResponses);
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error fetching items."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Error fetching items."));
         }
     }
 
-    private void handleGetItemDetails(HttpExchange ex) throws IOException, IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can view item details."));
-            return;
-        }
+    private void handleGetItemDetails(HttpExchange ex, String token) throws IOException, IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");
@@ -794,43 +727,35 @@ public class BuyerHandler implements HttpHandler {
             if (parts.length > 2) {
                 itemId = Long.parseLong(parts[2]);
             } else {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Item ID missing in path. Expected /items/{id}"));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Item ID missing in path. Expected /items/{id}"));
                 return;
             }
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid item ID format in path. Must be a number."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid item ID format in path. Must be a number."));
             return;
         }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             FoodItem item = session.get(FoodItem.class, itemId);
             if (item == null || !item.isActive() || item.getRestaurant() == null || !item.getRestaurant().isActive()) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Item not found, not active, or belongs to an inactive vendor."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Item not found, not active, or belongs to an inactive vendor."));
                 return;
             }
             JsonHelper.sendJson(ex, 200, new FoodItemResponse(item));
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Error fetching item details: " + e.getMessage()));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Error fetching item details: " + e.getMessage()));
         }
     }
 
-    private void handleCheckCouponValidity(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can check coupon validity."));
-            return;
-        }
+    private void handleCheckCouponValidity(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         Map<String, String> queryParams = splitQuery(ex.getRequestURI().getQuery());
         String couponCode = queryParams != null ? queryParams.get("coupon_code") : null;
 
         if (couponCode == null || couponCode.trim().isEmpty()) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Missing required query parameter: coupon_code."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Missing required query parameter: coupon_code."));
             return;
         }
 
@@ -840,71 +765,60 @@ public class BuyerHandler implements HttpHandler {
             query.setParameter("code", couponCode.trim());
             Coupon coupon = query.uniqueResult();
 
-            //   بررسی پیدا شدن کوپن
             if (coupon == null) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon not found."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Coupon not found."));
                 return;
             }
 
-            //  بررسی شرایط اعتبار کوپن
             LocalDate today = LocalDate.now();
             if (!coupon.isActive()) {  // کوپن هنوز موجوده یا نه
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon is not active."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Coupon is not active."));
                 return;
             }
             if (today.isBefore(coupon.getStartDate())) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon is not yet valid. It starts on " + coupon.getStartDate() + "."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Coupon is not yet valid. It starts on " + coupon.getStartDate() + "."));
                 return;
             }
             if (today.isAfter(coupon.getEndDate())) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon has expired."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Coupon has expired."));
                 return;
             }
             if (coupon.getTimesUsed() != null && coupon.getUserCount() != null && coupon.getTimesUsed() >= coupon.getUserCount()) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Coupon has reached its usage limit."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Coupon has reached its usage limit."));
                 return;
             }
 
-            // اگر تمام بررسی‌ها موفقیت‌آمیز بود، کوپن معتبر است
             JsonHelper.sendJson(ex, 200, new CouponResponse(coupon));
 
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while checking coupon validity."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while checking coupon validity."));
         }
     }
 
-    private void handleGetRatingDetails(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can access ratings."));
-            return;
-        }
+    private void handleGetRatingDetails(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         String[] parts = ex.getRequestURI().getPath().split("/");
-        Long ratingId;
+        long ratingId;
         try {
-            ratingId = Long.parseLong(parts[2]);  // استخراج ایدی نمره دهی
+            ratingId = Long.parseLong(parts[2]);
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid rating ID format."));
             return;
         }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Rating rating = session.get(Rating.class, ratingId);
 
-            if (rating == null) {  //  نمره دهی با این ایدی پیدا نشد
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+            if (rating == null) {
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Rating not found."));
                 return;
             }
 
-            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));  // ایدی کسی که این نظر رو ثبت کرده
+            Long userIdFromToken = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
             if (!rating.getUser_id().equals(userIdFromToken)) {  // این ایدی با ایدی کسی که نظر رو ثبت کرده یکی نیست
-                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: You are not the owner of this rating."));
                 return;
             }
 
@@ -912,28 +826,20 @@ public class BuyerHandler implements HttpHandler {
 
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while fetching rating."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while fetching rating."));
         }
     }
 
 
-    private void handleDeleteRating(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can delete ratings."));
-            return;
-        }
+    private void handleDeleteRating(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
 
         String[] parts = ex.getRequestURI().getPath().split("/");
         Long ratingId;
         try {
             ratingId = Long.parseLong(parts[2]);
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid rating ID format."));
             return;
         }
 
@@ -943,14 +849,14 @@ public class BuyerHandler implements HttpHandler {
             Rating rating = session.get(Rating.class, ratingId);
 
             if (rating == null) {  //  نمره دهی با این ایدی پیدا نشد
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Rating not found."));
                 if (tx.isActive()) tx.rollback();
                 return;
             }
 
-            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));
+            Long userIdFromToken = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
             if (!rating.getUser_id().equals(userIdFromToken)) {
-                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: You are not the owner of this rating."));
                 if (tx.isActive()) tx.rollback();
                 return;
             }
@@ -964,27 +870,18 @@ public class BuyerHandler implements HttpHandler {
                 tx.rollback();
             }
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while deleting rating."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while deleting rating."));
         }
     }
 
-    private void handleUpdateRating(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if (ErrorHandler.FindError(ex, token)) return;
-
-        String role = JwtUtil.getRoleFromToken(token);
-        if (role == null || !role.equalsIgnoreCase("BUYER")) {
-            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: Only buyers can update ratings."));
-            return;
-        }
-
+    private void handleUpdateRating(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         String[] parts = ex.getRequestURI().getPath().split("/");
-        Long ratingId;
+        long ratingId;
         try {
             ratingId = Long.parseLong(parts[2]);
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating ID format."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid rating ID format."));
             return;
         }
 
@@ -992,11 +889,11 @@ public class BuyerHandler implements HttpHandler {
         try {
             req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8), RatingUpdateRequest.class);
             if (req == null) {
-                JsonHelper.sendJson(ex, 400, new MessageResponse("Request body is empty or malformed."));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Request body is empty or malformed."));
                 return;
             }
         } catch (Exception e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid request body format."));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid request body format."));
             return;
         }
 
@@ -1006,24 +903,23 @@ public class BuyerHandler implements HttpHandler {
             Rating rating = session.get(Rating.class, ratingId);
 
             if (rating == null) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Rating not found."));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Rating not found."));
                 if (tx.isActive()) tx.rollback();
                 return;
             }
 
-            Long userIdFromToken = Long.valueOf(JwtUtil.getUserIdFromToken(token));
+            Long userIdFromToken = Long.valueOf(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
             if (!rating.getUser_id().equals(userIdFromToken)) {
-                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden: You are not the owner of this rating."));
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden: You are not the owner of this rating."));
                 if (tx.isActive()) tx.rollback();
                 return;
             }
-
             // این بخش بعدا میتنه بهتر بشه فعلا همین طوری یه بررسی ساده انجام دادم
             if (req.getRating() != null) {
                 if (req.getRating() >= 1 && req.getRating() <= 5) {
                     rating.setRating(req.getRating());
                 } else {
-                    JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid rating value. Must be between 1 and 5."));
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid rating value. Must be between 1 and 5."));
                     if (tx.isActive()) tx.rollback();
                     return;
                 }
@@ -1044,7 +940,7 @@ public class BuyerHandler implements HttpHandler {
                 tx.rollback();
             }
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error while updating rating."));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while updating rating."));
         }
     }
 }

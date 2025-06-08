@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import dto.ResChangeStatus;
+import dto.RestaurantChangeStatus;
 import entity.*;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -97,9 +97,9 @@ public class RestaurantHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid orderId"));
             return;
         }
-        ResChangeStatus req = GSON.fromJson(
+        RestaurantChangeStatus req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
-                ResChangeStatus.class
+                RestaurantChangeStatus.class
         );
         if (req.getStatus() == null) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid status"));

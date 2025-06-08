@@ -8,27 +8,20 @@ import com.sun.net.httpserver.HttpHandler;
 import dto.ChangeStatusRequest;
 import entity.Order;
 import entity.OrderStatus;
-import entity.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.query.Query;
 import response.ErrorResponse;
 import response.ErrorResponse;
-import response.MessageResponse;
 import response.OrderResponse;
 import util.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CourierHandler implements HttpHandler {
     private static final Gson GSON = new GsonBuilder()
@@ -37,27 +30,36 @@ public class CourierHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        String path = ex.getRequestURI().getPath();
-        String method = ex.getRequestMethod();
-        if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/available")) {
-            handleGetAvailable(ex);
-        } else if ("PATCH".equalsIgnoreCase(method) && path.matches("^/deliveries/\\d+$")) {
-            handleChangeStatus(ex);
-        } else if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/history")) {
+        try {
+            String auth;
+            try {
+                auth = ex.getRequestHeaders().getFirst("Authorization");
+            } catch (Exception e) {
+                JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
+                return;
+            }
+            String token = auth.substring(7);
+            String path = ex.getRequestURI().getPath();
+            String method = ex.getRequestMethod();
+            if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/available")) {
+                handleGetAvailable(ex,token);
+            } else if ("PATCH".equalsIgnoreCase(method) && path.matches("^/deliveries/\\d+$")) {
+                handleChangeStatus(ex,token);
+            }
+//        else if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/history")) {
 //            handleGetHistory(ex);
-        } else {
-            ex.sendResponseHeaders(404, -1);
+//        }
+            else {
+                ex.sendResponseHeaders(404, -1);
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
 
-    private void handleGetAvailable(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if(ErrorHandler.FindError(ex,token)) return;
-//        if (!JwtUtil.validateToken(token) || !"COURIER".equals(JwtUtil.getRoleFromToken(token)) ) {
-//            JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden"));
-//            return;
-//        }
+    private void handleGetAvailable(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"COURIER",token)) return;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             List<Order> orders = session.createQuery(
                             "from Order o where o.status = :status",
@@ -68,23 +70,24 @@ public class CourierHandler implements HttpHandler {
             List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
                     .collect(Collectors.toList());
             JsonHelper.sendJson(ex, 200, resp);
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
 
-    private void handleChangeStatus(HttpExchange ex) throws IOException {
-        String auth = ex.getRequestHeaders().getFirst("Authorization");
-        String token = auth.substring(7);
-        if(ErrorHandler.FindError(ex,token)) return;
+    private void handleChangeStatus(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"COURIER",token)) return;
         String[] parts = ex.getRequestURI().getPath().split("/");
         if (parts.length < 3) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid delivery ID"));
             return;
         }
         int orderId;
         try {
             orderId = Integer.parseInt(parts[2]);
         } catch (NumberFormatException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid delivery ID"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid delivery ID"));
             return;
         }
 
@@ -93,22 +96,21 @@ public class CourierHandler implements HttpHandler {
                 ChangeStatusRequest.class
         );
         if (req.getStatus() == null) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Status is required"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Status is required"));
             return;
         }
         OrderStatus requestedStatus;
         try {
             requestedStatus = OrderStatus.valueOf(String.valueOf(req.getStatus()));
         } catch (IllegalArgumentException e) {
-            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid status value"));
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid status value"));
             return;
         }
-
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, orderId);
             if (order == null) {
-                JsonHelper.sendJson(ex, 404, new MessageResponse("Order not found"));
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Order not found"));
                 return;
             }
 
@@ -129,12 +131,12 @@ public class CourierHandler implements HttpHandler {
                     validTransition = false;
             }
             if (!validTransition) {
-                JsonHelper.sendJson(ex, 403, new MessageResponse("Forbidden request"));
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
                 return;
             }
             if (requestedStatus == OrderStatus.FINDING_COURIER) {
                 if (order.getCourierId() != null) {
-                    JsonHelper.sendJson(ex, 409, new MessageResponse("Conflict occurred"));
+                    JsonHelper.sendJson(ex, 409, new ErrorResponse("Conflict occurred"));
                     return;
                 }
                 int courierId = Integer.parseInt(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
@@ -151,10 +153,12 @@ public class CourierHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 200, data);
         } catch (Exception e) {
             e.printStackTrace();
-            JsonHelper.sendJson(ex, 500, new MessageResponse("Internal server error"));
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
+
+    //حذف شده
 //    private void handleGetHistory(HttpExchange ex) throws IOException {
 //        String auth = ex.getRequestHeaders().getFirst("Authorization");
 //        String token = auth.substring(7);
