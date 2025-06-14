@@ -23,6 +23,7 @@ public class Main {
         server.createContext("/vendors",     new BuyerHandler());
         server.createContext("/item",     new BuyerHandler());
         server.createContext("/ratings",     new BuyerHandler());
+        server.createContext("/coupons",     new BuyerHandler());
         server.createContext("/deliveries", new CourierHandler());
 
         server.start();

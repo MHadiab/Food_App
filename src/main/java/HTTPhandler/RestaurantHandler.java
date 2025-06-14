@@ -38,6 +38,7 @@ public class RestaurantHandler implements HttpHandler {
             String auth;
             try {
                 auth = ex.getRequestHeaders().getFirst("Authorization");
+                if(ErrorHandler.AuthorizationError(ex) || auth == null) throw new Exception("Authorization Error");
             } catch (Exception e) {
                 JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
                 return;

@@ -40,6 +40,7 @@ public class BuyerHandler implements HttpHandler {
             String auth;
             try {
                 auth = ex.getRequestHeaders().getFirst("Authorization");
+                if(ErrorHandler.AuthorizationError(ex) || auth == null) throw new Exception("Authorization Error");
             } catch (Exception e) {
                 JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));
                 return;
@@ -135,6 +136,7 @@ public class BuyerHandler implements HttpHandler {
         }catch (Exception e){
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+            return;
         }
     }
 
@@ -461,7 +463,7 @@ public class BuyerHandler implements HttpHandler {
             long totalRawPrice = 0;
 
             for (OrderItemDTO dto : req.getItems()) {
-                if (dto.getItem_id() == null) {
+                if (dto.getItem_id() == null || !dto.getItem_id().toString().equalsIgnoreCase(restaurant.getId().toString())) {
                     JsonHelper.sendJson(ex, 400, new ErrorResponse("Each item must have a non-null item_id"));
                     return;
                 }
@@ -485,11 +487,16 @@ public class BuyerHandler implements HttpHandler {
                 orderItems.add(new OrderItem(itemId, qty));
             }
             Double coupon_discount=0.0;
-            if (req.getCoupon_id() != null && req.getCoupon_id() > 0) {
+            System.out.println(req.getCoupon_id());
+            if (req.getCoupon_id() != null) {
                 Query<Coupon> query = session.createQuery("FROM Coupon c WHERE c.couponCode = :code", Coupon.class);
                 query.setParameter("code", req.getCoupon_id().toString().trim());
                 Coupon coupon = query.uniqueResult();
-                if (coupon != null){
+                if (coupon == null) {
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid coupon_id"));
+                    return;
+                }
+                else {
                     LocalDate today = LocalDate.now();
                     if(coupon.isActive() && !today.isBefore(coupon.getStartDate()) && !today.isAfter(coupon.getEndDate())
                             && (coupon.getTimesUsed() != null && coupon.getUserCount() != null && coupon.getTimesUsed() < coupon.getUserCount())){
@@ -500,9 +507,15 @@ public class BuyerHandler implements HttpHandler {
                         } else if (coupon.getType()==CouponType.PERCENT) {
                             coupon_discount= totalRawPrice * coupon.getValue() / 100;
                         }
+                    }else {
+                        JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid coupon_id"));
+                        return;
                     }
                 }
+
             }
+
+            System.out.println(coupon_discount);
             Order order = new Order();
             order.setDeliveryAddress(user.getAddress());
             order.setUser(user);
@@ -789,10 +802,11 @@ public class BuyerHandler implements HttpHandler {
             }
 
             JsonHelper.sendJson(ex, 200, new CouponResponse(coupon));
-
+            return;
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while checking coupon validity."));
+            return;
         }
     }
 

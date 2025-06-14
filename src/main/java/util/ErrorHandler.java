@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class ErrorHandler {
-    private static Boolean AuthorizationError(HttpExchange ex) throws IOException {
+    public static Boolean AuthorizationError(HttpExchange ex) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
             JsonHelper.sendJson(ex, 401, new ErrorResponse("Unauthorized request"));

@@ -13,6 +13,6 @@ import java.util.List;
 public class CreateOrderRequest {
     private String delivery_address;
     private Integer vendor_id;
-    private Integer coupon_id;
+    private String coupon_id;
     private ArrayList<OrderItemDTO> items;
 }

@@ -1,109 +1,53 @@
-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IkJVWUVSIiwiZnVsbE5hbWUiOiJhbGkiLCJpYXQiOjE3NDkyMTI1ODksImV4cCI6MTc0OTIyMzM4OX0.X-sW939f_iMHXAkkrB8UGBcYLJ1skefiGQgRt6mwqH0
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IkJVWUVSIiwiZnVsbE5hbWUiOiJhbGkiLCJpYXQiOjE3NDk4ODY1MTAsImV4cCI6MTc0OTg5NzMxMH0.y6wNK_iYt2KRRyHC6_arMymWv3FwLXyEkB6ZWcOExZI
+
+
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlNFTExFUiIsImZ1bGxOYW1lIjoicmV6YSIsImlhdCI6MTc0OTg4NzI3MiwiZXhwIjoxNzQ5ODk4MDcyfQ.IkZ0f1Pueb49JY2ghyWez1Op7Ko__vHIqhvEjuaw4NM
+
+ادمین
+رضا
+علی
+حسین
+coirier
 
 
 
-
-admin :  eyJhbGciOiJIUzI1NiJ9.e
-yJzdWIiOiIxIiwicm9sZSI6IkFETUlOIiwiZnVsbE5hbWUiOiJhZG1pbiIsImlhdCI6MTc0ODg2MzU1MywiZXhwIjoxNzQ4ODc0MzUzfQ.MgstTTRYrmqxkdTmLEcpkxdQsDVjF6IAq7UzNV50UQk
-
-
-reza-seller :  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlNFTExFUiIsImZ1bGxOYW1lIjoicmV6YSIsImlhdCI6MTc0ODk2MzQxMCwiZXhwIjoxNzQ4OTc0MjEwfQ.K9ERqCflALfcTbJlz_ZEs86Cm89vPAw_najqRvZcphc    id:3   phone string1
-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwicm9sZSI6IlNFTExFUiIsImZ1bGxOYW1lIjoicmV6YSIsImlhdCI6MTc0OTIxNDM1NiwiZXhwIjoxNzQ5MjI1MTU2fQ.xnWjsHXya2wglC5WjX7b3d-JyuW7ekKA0yEH0zLtEW0
-
-
-
-
-تو ثبت سفارش فیلد آیتم چک نمیشه
-مشکل پارامتر سرچ ها
-تطابق پارامتر های کویری با فیلد ها
-ترتیب authorization
-
-
-چک کردن هویت ادمین در دستوراتش
-و فایند ارور
-وضعیت تاریخجه گرفتن پیک
-
+{
+  "search": "string",
+  "keywords": [
+    "string"
+  ]
+}
 
 
 [
     {
         "id": 1,
-        "delivery_address": "string",
-        "customer_id": 2,
-        "vendor_id": 1,
-        "items": [
-            {
-                "itemId": 1,
-                "quantity": 4
-            }
-        ],
-        "raw_price": 0,
-        "tax_fee": 0,
-        "additional_fee": 0,
-        "courier_fee": 0,
-        "pay_price": 0,
-        "courier_id": 0,
-        "status": "WAITING_VENDOR",
-        "createdAt": "2025-06-03T19:09:43.864"
+        "couponCode": "string",
+        "type": "FIXED",
+        "value": 10000.0,
+        "minPrice": 30000,
+        "userCount": 1,
+        "startDate": "2025-06-10",
+        "endDate": "2025-06-11"
     },
     {
         "id": 2,
-        "delivery_address": "string",
-        "customer_id": 2,
-        "vendor_id": 1,
-        "items": [
-            {
-                "itemId": 1,
-                "quantity": 4
-            }
-        ],
-        "raw_price": 0,
-        "tax_fee": 0,
-        "additional_fee": 0,
-        "courier_fee": 0,
-        "pay_price": 0,
-        "courier_id": 0,
-        "status": "SUBMITTED",
-        "createdAt": "2025-06-03T19:09:45.995"
+        "couponCode": "two",
+        "type": "FIXED",
+        "value": 10000.0,
+        "minPrice": 30000,
+        "userCount": 1,
+        "startDate": "2025-06-10",
+        "endDate": "2025-06-16"
     },
     {
         "id": 3,
-        "delivery_address": "string",
-        "customer_id": 2,
-        "vendor_id": 1,
-        "items": [
-            {
-                "itemId": 1,
-                "quantity": 2
-            }
-        ],
-        "raw_price": 0,
-        "tax_fee": 0,
-        "additional_fee": 0,
-        "courier_fee": 0,
-        "pay_price": 0,
-        "courier_id": 0,
-        "status": "SUBMITTED",
-        "createdAt": "2025-06-03T19:11:01.314"
-    },
-    {
-        "id": 4,
-        "delivery_address": "string",
-        "customer_id": 2,
-        "vendor_id": 1,
-        "items": [
-            {
-                "itemId": 1,
-                "quantity": 2
-            }
-        ],
-        "raw_price": 0,
-        "tax_fee": 0,
-        "additional_fee": 0,
-        "courier_fee": 0,
-        "pay_price": 0,
-        "courier_id": 0,
-        "status": "SUBMITTED",
-        "createdAt": "2025-06-03T19:14:50.751"
+        "couponCode": "three",
+        "type": "PERCENT",
+        "value": 25.0,
+        "minPrice": 30000,
+        "userCount": 1,
+        "startDate": "2025-06-10",
+        "endDate": "2025-06-16"
     }
 ]

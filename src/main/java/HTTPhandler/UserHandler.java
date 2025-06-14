@@ -157,7 +157,11 @@ public class UserHandler implements HttpHandler {
                     .setParameter("phone", req.getPhone())
                     .uniqueResult();
             if (user == null) {
-                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid JSON body"));
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("user not found"));
+                return;
+            }
+            if(!user.getPassword().equals(req.getPassword())) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("password does not match"));
                 return;
             }
             Role role = user.getRole();
