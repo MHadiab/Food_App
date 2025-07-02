@@ -16,6 +16,7 @@ import util.*;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -151,6 +152,7 @@ public class RestaurantHandler implements HttpHandler {
                 JsonHelper.sendJson(ex, 403, new ErrorResponse("Forbidden request"));
                 return;
             }
+            order.setUpdatedAt(LocalDateTime.now());
             order.setStatus(requestedStatus);
             session.merge(order);
             tx.commit();
@@ -188,12 +190,11 @@ public class RestaurantHandler implements HttpHandler {
             hql.append(" JOIN o.user u");
         }
         hql.append(" WHERE o.restaurant.id = :restaurantId");
-
         if (search != null && !search.isBlank()) {
-            hql.append(" AND (cast(oi.itemId as string) LIKE :search OR kw LIKE :search)");
+            hql.append(" AND (fi.name LIKE :search)");
         }
         if (status != null && !status.isBlank()) {
-            hql.append(" AND o.status = :status");
+            hql.append(" AND o.status LIKE :status");
         }
         if (user != null && !user.isBlank()) {
             hql.append(" AND (cast(u.id as string) LIKE :user OR u.full_name LIKE :user)");
@@ -201,7 +202,6 @@ public class RestaurantHandler implements HttpHandler {
         if (courier != null && !courier.isBlank()) {
             hql.append(" AND o.courierId = :courier");
         }
-
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Restaurant restaurant = session.get(Restaurant.class, id);
             String seller = JwtUtil.getUserIdFromToken(token);
@@ -235,6 +235,7 @@ public class RestaurantHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RestaurantRequest.class
         );
+        String MOBILE_REGEX = "^(?:\\+98|0)?9\\d{9}$";
         if (req == null) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Bad Request"));
             return;
@@ -247,7 +248,7 @@ public class RestaurantHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("invalid address"));
             return;
         }
-        if (req.getPhone() == null) {
+        if (req.getPhone() == null || !req.getPhone().matches(MOBILE_REGEX)) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("invalid phone"));
             return;
         }
@@ -313,6 +314,7 @@ public class RestaurantHandler implements HttpHandler {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
             String userId = JwtUtil.getUserIdFromToken(token);
+            assert userId != null;
             User user = session.get(User.class, Long.valueOf(userId));
             if (user == null) {
                 JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));

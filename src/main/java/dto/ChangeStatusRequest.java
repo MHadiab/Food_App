@@ -8,5 +8,5 @@ import lombok.Setter;
 @Setter
 public class ChangeStatusRequest {
     private String order_id;
-    private OrderStatus status;
+    private String status;
 }

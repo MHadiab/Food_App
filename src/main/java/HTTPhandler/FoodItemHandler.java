@@ -84,10 +84,9 @@ public class FoodItemHandler implements HttpHandler {
         return false;
     }
 
-
     private FoodItem getAndValidateFoodItemForRestaurant(Session session, Long itemId, Long restaurantId, HttpExchange ex) throws IOException {
         FoodItem foodItem = session.get(FoodItem.class, itemId);
-        if (foodItem == null || !foodItem.getRestaurant().getId().equals(restaurantId)) {
+        if (foodItem == null || !(String.valueOf(foodItem.getRestaurant().getId()).equals(String.valueOf(restaurantId)))) {
             JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found: Food item not found in this restaurant."));
             return null;
         }
@@ -191,10 +190,8 @@ public class FoodItemHandler implements HttpHandler {
 
             FoodItem foodItem = getAndValidateFoodItemForRestaurant(session, itemId, restaurantId, ex);
             if (foodItem == null) { 
-                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
                 return;
             }
-
 
             Transaction tx = null;
             try {
@@ -241,7 +238,6 @@ public class FoodItemHandler implements HttpHandler {
 
             FoodItem foodItem = getAndValidateFoodItemForRestaurant(session, itemId, restaurantId, ex);
             if (foodItem == null) { 
-                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found"));
                 return;
             }
 

@@ -141,6 +141,7 @@ public class OrderHandler implements HttpHandler {
             user.setBalance(current + req.getAmount());
             user.setBalance(req.getAmount() + user.getBalance());
             session.merge(user);
+
             tx.commit();
             JsonHelper.sendJson(ex, 200, new MessageResponse("Wallet topped up successfully"));
 
