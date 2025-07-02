@@ -18,6 +18,7 @@ import util.*;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,7 +103,7 @@ public class CourierHandler implements HttpHandler {
         }
         OrderStatus requestedStatus;
         try {
-            requestedStatus = OrderStatus.valueOf(String.valueOf(req.getStatus()));
+            requestedStatus = OrderStatus.valueOf(req.getStatus());
         } catch (IllegalArgumentException e) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid status value"));
             return;
@@ -143,7 +144,7 @@ public class CourierHandler implements HttpHandler {
                 int courierId = Integer.parseInt(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
                 order.setCourierId(courierId);
             }
-
+            order.setUpdatedAt(LocalDateTime.now());
             order.setStatus(requestedStatus);
             session.merge(order);
             tx.commit();

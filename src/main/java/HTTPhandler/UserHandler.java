@@ -70,6 +70,8 @@ public class UserHandler implements HttpHandler {
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RegisterRequest.class
         );
+        String EMAIL_REGEX      = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+        String MOBILE_REGEX = "^(?:\\+98|0)?9\\d{9}$";
         if (req == null) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid JSON body"));
             return;
@@ -79,9 +81,12 @@ public class UserHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid full_name"));
             return;
         }
-        if (req.getPhone() == null) {
+        if (req.getPhone() == null || !req.getPhone().matches(MOBILE_REGEX)) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid phone"));
             return;
+        }
+        if(req.getEmail() != null && !req.getEmail().matches(EMAIL_REGEX)) {
+            JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid email"));
         }
         if (req.getPassword() == null) {
             JsonHelper.sendJson(ex, 400, new MessageResponse("Invalid password"));

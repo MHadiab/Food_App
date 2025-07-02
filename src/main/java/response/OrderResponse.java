@@ -6,8 +6,6 @@ import entity.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -25,8 +23,8 @@ public class OrderResponse {
     private Double pay_price;
     private int courier_id;
     private OrderStatus status;
-    private String createdAt;
-    private String updatedAt;
+    private String created_at;
+    private String updated_at;
 
 
     public OrderResponse(Order order) {
@@ -42,11 +40,11 @@ public class OrderResponse {
         this.pay_price=order.getPayPrice();
         this.courier_id=order.getCourierId();
         this.status=order.getStatus();
-        this.createdAt=order.getCreatedAt().toString();
+        this.created_at =order.getCreatedAt().toString();
         if (order.getUpdatedAt() != null) {
-            this.updatedAt=order.getUpdatedAt().toString();
+            this.updated_at =order.getUpdatedAt().toString();
         }else {
-            this.updatedAt=null;
+            this.updated_at =null;
         }
     }
 

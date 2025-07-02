@@ -158,10 +158,15 @@ public class AdminHandler implements HttpHandler {
         String customer = params.get("customer");
         String status   = params.get("status");
 
-        StringBuilder hql = new StringBuilder("FROM Order o WHERE 1=1");
+        StringBuilder hql = new StringBuilder();
+        hql.append("SELECT DISTINCT o")
+                .append(" FROM Order o")
+                .append(" JOIN o.items oi")
+                .append(" JOIN FoodItem fi ON fi.id = oi.itemId")
+                .append(" JOIN fi.keywords kw");
+        hql.append(" WHERE 1=1");
         if (search != null && !search.isBlank()) {
-            hql.append(" AND (cast(o.id as string) LIKE :search")
-                    .append(" OR o.deliveryAddress LIKE :search)");
+            hql.append(" AND (fi.name LIKE :search)");
         }
         if (vendorId != null && !vendorId.isBlank()) {
             hql.append(" AND cast(o.restaurant.id as string) LIKE :vendor");
@@ -392,7 +397,7 @@ public class AdminHandler implements HttpHandler {
         if (ErrorHandler.FindError(ex,token) || ErrorHandler.Forbid(ex,"ADMIN",token)) return;
         String path = ex.getRequestURI().getPath();
         String[] parts = path.split("/");
-        Integer couponId;
+        int couponId;
         try {
             if (parts.length > 3) {
                 couponId = Integer.parseInt(parts[3]);

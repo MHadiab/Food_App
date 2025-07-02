@@ -369,14 +369,21 @@ public class BuyerHandler implements HttpHandler {
             searchParam = params.get("search");
             vendorParam = params.get("vendor");
         }
-        StringBuilder hql = new StringBuilder("FROM Order o WHERE o.user.user_id = :userId");
+
+        StringBuilder hql = new StringBuilder();
+        hql.append("SELECT DISTINCT o")
+                .append(" FROM Order o")
+                .append(" JOIN o.items oi")
+                .append(" JOIN FoodItem fi ON fi.id = oi.itemId")
+                .append(" JOIN fi.keywords kw");
+        hql.append(" WHERE o.user.user_id = :userId");
+
         if (searchParam != null && !searchParam.isBlank()) {
-            hql.append(" AND (cast(o.id as string) LIKE :search OR o.deliveryAddress LIKE :search)");
+            hql.append(" AND (fi.name  LIKE :search)");
         }
         if (vendorParam != null && !vendorParam.isBlank()) {
             hql.append(" AND o.restaurant.id = :vendorId");
         }
-        hql.append(" ORDER BY o.createdAt DESC");
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Order> query = session.createQuery(hql.toString(), Order.class);

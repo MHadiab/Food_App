@@ -25,6 +25,8 @@ import util.JwtUtil;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MenuHandler implements HttpHandler {
 
@@ -54,6 +56,9 @@ public class MenuHandler implements HttpHandler {
                 handleAddItemToMenu(ex, token);
             } else if (path.matches("/restaurants/\\d+/menu/[^/]+/\\d+") && "DELETE".equalsIgnoreCase(method)) {
                 handleDeleteItemFromMenu(ex, token);
+            } else if (path.matches("^/restaurants/\\d+/menus$") && "GET".equalsIgnoreCase(method)) {  // اینو جدید اضافه کردم برای بالا اوردن منو های یه رستوران توی فرانتم
+                handleGetMenusByRestaurantId(ex, token);  // همچین اند پوینی رو نداشتیم توی بک و جدید اضافه کردم
+                return;
             } else {
                 ex.sendResponseHeaders(404, -1);
             }
@@ -97,6 +102,39 @@ public class MenuHandler implements HttpHandler {
             return null;
         }
         return menu;
+    }
+
+    private void handleGetMenusByRestaurantId(HttpExchange ex, String token) throws IOException {
+        // اعتبارسنجی اولیه توکن
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        // استخراج restaurantId از مسیر URL
+        String path = ex.getRequestURI().getPath();
+        Long restaurantId = Long.parseLong(path.split("/")[2]);
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // بررسی اینکه آیا کاربر لاگین شده (Seller) مالک این رستوران است
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
+
+            // دریافت لیست منوها از دیتابیس برای restaurantId مشخص شده
+            List<Menu> menus = session.createQuery("FROM entity.Menu WHERE restaurant.id = :restaurantId", Menu.class)
+                    .setParameter("restaurantId", restaurantId)
+                    .list();
+
+            List<MenuResponse> menuResponses = menus.stream()
+                    .map(menu -> new MenuResponse(menu.getTitle()))
+                    .collect(Collectors.toList());
+
+
+            // ارسال پاسخ موفقیت‌آمیز
+            JsonHelper.sendJson(ex, 200, menuResponses);
+
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid Restaurant ID format."));
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while getting menus."));
+        }
     }
 
     private void handleAddMenuToRestaurant(HttpExchange ex, String token) throws IOException {
