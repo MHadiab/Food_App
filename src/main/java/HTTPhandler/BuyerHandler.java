@@ -591,7 +591,7 @@ public class BuyerHandler implements HttpHandler {
                         }
                     }
                     if (!keywordConditions.isEmpty()) {
-                        hql.append(" AND (").append(String.join(" OR ", keywordConditions)).append(")");
+                        hql.append(" OR (").append(String.join(" OR ", keywordConditions)).append(")");
                     }
                 }
             }
@@ -716,7 +716,7 @@ public class BuyerHandler implements HttpHandler {
                             .map(String::toLowerCase)
                             .collect(Collectors.toList());
                     if (!validKeywords.isEmpty()) {
-                        hql.append(" AND EXISTS (SELECT kw FROM fi.keywords kw WHERE LOWER(kw) IN (:itemKeywords))");
+                        hql.append(" OR EXISTS (SELECT kw FROM fi.keywords kw WHERE LOWER(kw) IN (:itemKeywords))");
                         parameters.put("itemKeywords", validKeywords);
                     }
                 }
@@ -730,6 +730,7 @@ public class BuyerHandler implements HttpHandler {
             List<FoodItemResponse> itemResponses = items.stream()
                     .map(FoodItemResponse::new)
                     .collect(Collectors.toList());
+
             JsonHelper.sendJson(ex, 200, itemResponses);
         } catch (Exception e) {
             e.printStackTrace();

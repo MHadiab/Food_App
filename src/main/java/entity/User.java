@@ -33,6 +33,7 @@ public class User {
     @Column(nullable = false)
     private String address;
 
+    @Lob
     @Column(nullable = true)
     private String profileImageBase64;
 
