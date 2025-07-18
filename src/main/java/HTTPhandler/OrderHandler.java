@@ -26,6 +26,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class OrderHandler implements HttpHandler {
     private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .registerTypeAdapter(java.time.LocalDateTime.class, new LocalDateTimeAdapter())
             .create();
 
     @Override
@@ -59,6 +60,7 @@ public class OrderHandler implements HttpHandler {
     }
 
     private void handleOnlinePayment(HttpExchange ex, String token) throws IOException {
+        System.out.println("online payment");
         if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
         PaymentRequest req = GSON.fromJson(new InputStreamReader(ex.getRequestBody(), UTF_8), PaymentRequest.class);
         if(req == null){
@@ -104,6 +106,7 @@ public class OrderHandler implements HttpHandler {
             if (req.getMethod().equalsIgnoreCase("wallet")) tr.setMethod(TransactionType.WALLET);
             else tr.setMethod(TransactionType.ONLINE);
             tr.setStatus(TransactionStatus.SUCCESS);
+            tr.setOrder(order);
             tr.setAmount(order.getPayPrice());
             tr.setUser(user);
             tr.setDate(java.time.LocalDateTime.now());
@@ -111,6 +114,7 @@ public class OrderHandler implements HttpHandler {
             tx.commit();
             JsonHelper.sendJson(ex, 200, tr);
         } catch (Exception e) {
+            e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
         }
     }
@@ -141,6 +145,22 @@ public class OrderHandler implements HttpHandler {
             user.setBalance(current + req.getAmount());
             user.setBalance(req.getAmount() + user.getBalance());
             session.merge(user);
+
+
+            Transaction tr = new Transaction();
+            tr.setMethod(TransactionType.ONLINE);
+            tr.setStatus(TransactionStatus.SUCCESS);
+            tr.setAmount(req.getAmount());
+            tr.setOrder(null);
+            tr.setUser(user);
+            tr.setDate(java.time.LocalDateTime.now());
+            session.persist(tr);
+
+
+
+
+
+
 
             tx.commit();
             JsonHelper.sendJson(ex, 200, new MessageResponse("Wallet topped up successfully"));
