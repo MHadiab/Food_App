@@ -35,19 +35,19 @@ public class ErrorHandler {
         return false;
     }
 
-    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
-        String userKey = JwtUtil.getUserIdFromToken(token);
-        if (!RateLimiter.allowRequest(userKey)) {
-            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-            return true;
-        }
-        return false;
-    }
+//    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
+//        String userKey = JwtUtil.getUserIdFromToken(token);
+//        if (!RateLimiter.allowRequest(userKey)) {
+//            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
+//            return true;
+//        }
+//        return false;
+//    }
 
     public static boolean FindError(HttpExchange ex, String token) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         return ErrorHandler.AuthorizationError(ex) || ErrorHandler.TokenError(ex, token)
-                || ErrorHandler.ContentError(ex, token) || ErrorHandler.ManyRequestError(ex, token);
+                || ErrorHandler.ContentError(ex, token) ;
     }
 
     public static boolean Forbid(HttpExchange ex, String roleShouldBe, String token) throws IOException {

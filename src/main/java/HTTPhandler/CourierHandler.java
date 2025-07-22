@@ -139,7 +139,8 @@ public class CourierHandler implements HttpHandler {
             }
 
             OrderStatus current = order.getStatus();
-            if (requestedStatus == OrderStatus.ON_THE_WAY && order.getCourierId() != courierId) {
+            if (requestedStatus == OrderStatus.ON_THE_WAY && order.getCourierId() != 0 && order.getCourierId() != courierId) {
+                System.out.println();
                 JsonHelper.sendJson(ex, 403, new ErrorResponse("this is not your order"));
                 return;
             }
@@ -171,6 +172,7 @@ public class CourierHandler implements HttpHandler {
             }
             order.setUpdatedAt(LocalDateTime.now());
             order.setStatus(requestedStatus);
+            order.setCourierId(courierId);
             session.merge(order);
             tx.commit();
             Map<String, Object> data = Map.of(
