@@ -58,7 +58,6 @@ public class MenuHandler implements HttpHandler {
                 handleDeleteItemFromMenu(ex, token);
             } else if (path.matches("^/restaurants/\\d+/menus$") && "GET".equalsIgnoreCase(method)) {  // اینو جدید اضافه کردم برای بالا اوردن منو های یه رستوران توی فرانتم
                 handleGetMenusByRestaurantId(ex, token);  // همچین اند پوینی رو نداشتیم توی بک و جدید اضافه کردم
-                return;
             } else {
                 ex.sendResponseHeaders(404, -1);
             }
