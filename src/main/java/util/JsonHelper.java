@@ -1,19 +1,24 @@
 package util;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 /**
  * کلاس کمکی برای ارسال پاسخ‌های JSON
  */
 public class JsonHelper {
     // یک نمونه‌ی ثابت از Gson برای serialize کردن اشیاء به JSON
-    private static final Gson GSON = new Gson();
-
+    private static final Gson GSON = new GsonBuilder()
+            // این خط به Gson یاد می‌دهد که چگونه LocalDateTime را به JSON تبدیل کند
+            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+            .setPrettyPrinting() // (اختیاری) باعث می‌شود خروجی JSON خواناتر باشد
+            .create();
     /**
      * شیء body را به JSON تبدیل می‌کند و با وضعیت HTTP مشخص شده می‌فرستد.
      *

@@ -23,6 +23,7 @@ public class Restaurant {
     @Column(nullable = false)
     private String phone;
 
+    @Lob
     @Column(columnDefinition = "TEXT")
     private String logoBase64;
 

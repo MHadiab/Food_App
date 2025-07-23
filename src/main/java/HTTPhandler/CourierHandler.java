@@ -47,6 +47,8 @@ public class CourierHandler implements HttpHandler {
                 handleGetAvailable(ex,token);
             } else if ("PATCH".equalsIgnoreCase(method) && path.matches("^/deliveries/\\d+$")) {
                 handleChangeStatus(ex,token);
+            } else if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/my")) {
+                handleGetMyDeliveries(ex,token);
             }
 //        else if ("GET".equalsIgnoreCase(method) && path.equals("/deliveries/history")) {
 //            handleGetHistory(ex);
@@ -54,6 +56,25 @@ public class CourierHandler implements HttpHandler {
             else {
                 ex.sendResponseHeaders(404, -1);
             }
+        }catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
+    }
+
+    private void handleGetMyDeliveries(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"COURIER",token)) return;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            System.out.println("Get My Deliveries");
+            List<Order> orders = session.createQuery(
+                            "from Order o where o.courierId = :id",
+                            Order.class
+                    )
+                    .setParameter("id", JwtUtil.getUserIdFromToken(token))
+                    .list();
+            List<OrderResponse> resp = orders.stream().map(OrderResponse::new)
+                    .collect(Collectors.toList());
+            JsonHelper.sendJson(ex, 200, resp);
         }catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
@@ -86,6 +107,7 @@ public class CourierHandler implements HttpHandler {
             return;
         }
         int orderId;
+        int courierId=Integer.parseInt(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
         try {
             orderId = Integer.parseInt(parts[2]);
         } catch (NumberFormatException e) {
@@ -117,6 +139,11 @@ public class CourierHandler implements HttpHandler {
             }
 
             OrderStatus current = order.getStatus();
+            if (requestedStatus == OrderStatus.ON_THE_WAY && order.getCourierId() != 0 && order.getCourierId() != courierId) {
+                System.out.println();
+                JsonHelper.sendJson(ex, 403, new ErrorResponse("this is not your order"));
+                return;
+            }
             boolean validTransition = false;
             switch (current) {
                 case FINDING_COURIER:
@@ -125,7 +152,7 @@ public class CourierHandler implements HttpHandler {
                     }
                     break;
                 case ON_THE_WAY:
-                    if (requestedStatus == OrderStatus.COMPLETED) {
+                    if (requestedStatus == OrderStatus.COMPLETED ) {
                         validTransition = true;
                     }
                     break;
@@ -141,11 +168,11 @@ public class CourierHandler implements HttpHandler {
                     JsonHelper.sendJson(ex, 409, new ErrorResponse("Conflict occurred"));
                     return;
                 }
-                int courierId = Integer.parseInt(Objects.requireNonNull(JwtUtil.getUserIdFromToken(token)));
                 order.setCourierId(courierId);
             }
             order.setUpdatedAt(LocalDateTime.now());
             order.setStatus(requestedStatus);
+            order.setCourierId(courierId);
             session.merge(order);
             tx.commit();
             Map<String, Object> data = Map.of(

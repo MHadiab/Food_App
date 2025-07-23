@@ -101,6 +101,10 @@ public class BuyerHandler implements HttpHandler {
                 handleGetRateOfItem(ex, itemId,token);
                 return;
             }
+            if ("GET".equalsIgnoreCase(method) && path.equals("/ratings/my")) {
+                hadleGetMyRatings(ex,token);
+                return;
+            }
             if ("POST".equalsIgnoreCase(method) && "/vendors".equals(path)) {
                 handleListVendors(ex,token);
                 return;
@@ -137,6 +141,26 @@ public class BuyerHandler implements HttpHandler {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
             return;
+        }
+    }
+
+    private void hadleGetMyRatings(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex,"BUYER",token)) return;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                System.out.println("Get My Ratings");
+                List<Rating> orders = session.createQuery(
+                                "from Rating r where r.user_id = :id",
+                                Rating.class
+                        )
+                        .setParameter("id", JwtUtil.getUserIdFromToken(token))
+                        .list();
+                List<RateResponse> resp = orders.stream().map(RateResponse::new)
+                        .collect(Collectors.toList());
+                JsonHelper.sendJson(ex, 200, resp);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error"));
         }
     }
 
@@ -591,7 +615,7 @@ public class BuyerHandler implements HttpHandler {
                         }
                     }
                     if (!keywordConditions.isEmpty()) {
-                        hql.append(" AND (").append(String.join(" OR ", keywordConditions)).append(")");
+                        hql.append(" OR (").append(String.join(" OR ", keywordConditions)).append(")");
                     }
                 }
             }
@@ -716,7 +740,7 @@ public class BuyerHandler implements HttpHandler {
                             .map(String::toLowerCase)
                             .collect(Collectors.toList());
                     if (!validKeywords.isEmpty()) {
-                        hql.append(" AND EXISTS (SELECT kw FROM fi.keywords kw WHERE LOWER(kw) IN (:itemKeywords))");
+                        hql.append(" OR EXISTS (SELECT kw FROM fi.keywords kw WHERE LOWER(kw) IN (:itemKeywords))");
                         parameters.put("itemKeywords", validKeywords);
                     }
                 }
@@ -730,6 +754,7 @@ public class BuyerHandler implements HttpHandler {
             List<FoodItemResponse> itemResponses = items.stream()
                     .map(FoodItemResponse::new)
                     .collect(Collectors.toList());
+
             JsonHelper.sendJson(ex, 200, itemResponses);
         } catch (Exception e) {
             e.printStackTrace();

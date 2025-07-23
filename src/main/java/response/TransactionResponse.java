@@ -13,7 +13,8 @@ public class TransactionResponse {
     private String status;
     public TransactionResponse(Transaction tx) {
         this.id= Math.toIntExact(tx.getId());
-        this.order_id = Math.toIntExact(tx.getOrder().getId());
+        if(tx.getOrder() != null) this.order_id = Math.toIntExact(tx.getOrder().getId());
+        else this.order_id = 0;
         this.user_id= Math.toIntExact(tx.getUser().getUser_id());
         this.method=tx.getMethod().toString();
         this.status=tx.getStatus().toString();

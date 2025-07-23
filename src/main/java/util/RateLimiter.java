@@ -13,7 +13,7 @@ public class RateLimiter {
     public static boolean allowRequest(String key) {
         // tryConsume()==true یعنی اجازه هست
         return buckets
-                .computeIfAbsent(key, k -> new SimpleRateBucket(10, Duration.ofMinutes(1)))
+                .computeIfAbsent(key, k -> new SimpleRateBucket(15, Duration.ofMinutes(1)))
                 .tryConsume();
     }
 

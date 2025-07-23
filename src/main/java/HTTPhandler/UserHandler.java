@@ -9,6 +9,7 @@ import dto.EditProfileRequest;
 import dto.LoginRequest;
 import dto.RegisterRequest;
 import dto.UserInfo;
+import entity.OrderStatus;
 import entity.Role;
 import entity.UserStatus;
 import org.hibernate.Session;
@@ -65,11 +66,12 @@ public class UserHandler implements HttpHandler {
     }
 
     private void handleRegister(HttpExchange ex) throws IOException {
-
+        System.out.println("Request sent");
         RegisterRequest req = GSON.fromJson(
                 new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8),
                 RegisterRequest.class
         );
+        System.out.println(req.getRole());
         String EMAIL_REGEX      = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
         String MOBILE_REGEX = "^(?:\\+98|0)?9\\d{9}$";
         if (req == null) {
@@ -115,12 +117,20 @@ public class UserHandler implements HttpHandler {
                 JsonHelper.sendJson(ex, 409, new MessageResponse("Phone number already exists"));
                 return;
             }
+            Role RoleEnum;
+            try {
+                RoleEnum = Role.valueOf(req.getRole().trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid Role: " + req.getRole()));
+                return;
+            }
+
             User user = new User();
             user.setFull_name(req.getFull_name());
             user.setPhone(req.getPhone());
             user.setEmail(req.getEmail());
             user.setPassword(req.getPassword());
-            user.setRole(Role.valueOf(req.getRole().toUpperCase()));
+            user.setRole(RoleEnum);
             user.setAddress(req.getAddress());
             user.setBank_info(req.getBank_info());
             session.persist(user);
