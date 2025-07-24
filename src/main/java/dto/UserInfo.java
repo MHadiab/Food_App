@@ -2,6 +2,7 @@ package dto;
 
 import entity.BankInfo;
 import entity.User;
+import entity.UserStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,7 @@ public class UserInfo {
     private String address;
     private String profileImageBase64;
     private BankInfo bank_info;
+    private UserStatus status;
     public UserInfo(String id, String full_name,String phone,
                     String email,String role,String address,
                     String profileImageBase64,BankInfo bank_info) {
@@ -38,5 +40,6 @@ public class UserInfo {
         this.address=user.getAddress();
         this.profileImageBase64=user.getProfileImageBase64();
         this.bank_info=user.getBank_info();
+        this.status=user.getStatus();
     }
 }

@@ -15,6 +15,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.exception.ConstraintViolationException;
 import response.ErrorResponse;
+import response.FoodItemResponse;
 import response.MenuResponse;
 import response.MessageResponse;
 import util.ErrorHandler;
@@ -58,6 +59,8 @@ public class MenuHandler implements HttpHandler {
                 handleDeleteItemFromMenu(ex, token);
             } else if (path.matches("^/restaurants/\\d+/menus$") && "GET".equalsIgnoreCase(method)) {  // اینو جدید اضافه کردم برای بالا اوردن منو های یه رستوران توی فرانتم
                 handleGetMenusByRestaurantId(ex, token);  // همچین اند پوینی رو نداشتیم توی بک و جدید اضافه کردم
+            } else if (path.matches("/restaurants/\\d+/menu/[^/]+/items") && "GET".equalsIgnoreCase(method)) { // اند پیونت جدید
+                handleGetFoodItemsByMenuTitle(ex, token); // دادن فود ایتم ها برای یک منو با تایتل خاص
             } else {
                 ex.sendResponseHeaders(404, -1);
             }
@@ -104,18 +107,13 @@ public class MenuHandler implements HttpHandler {
     }
 
     private void handleGetMenusByRestaurantId(HttpExchange ex, String token) throws IOException {
-        // اعتبارسنجی اولیه توکن
         if (ErrorHandler.FindError(ex, token)) return;
-
-        // استخراج restaurantId از مسیر URL
         String path = ex.getRequestURI().getPath();
         Long restaurantId = Long.parseLong(path.split("/")[2]);
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // بررسی اینکه آیا کاربر لاگین شده (Seller) مالک این رستوران است
             if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
 
-            // دریافت لیست منوها از دیتابیس برای restaurantId مشخص شده
             List<Menu> menus = session.createQuery("FROM entity.Menu WHERE restaurant.id = :restaurantId", Menu.class)
                     .setParameter("restaurantId", restaurantId)
                     .list();
@@ -125,7 +123,6 @@ public class MenuHandler implements HttpHandler {
                     .collect(Collectors.toList());
 
 
-            // ارسال پاسخ موفقیت‌آمیز
             JsonHelper.sendJson(ex, 200, menuResponses);
 
         } catch (NumberFormatException e) {
@@ -133,6 +130,44 @@ public class MenuHandler implements HttpHandler {
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while getting menus."));
+        }
+    }
+
+    private void handleGetFoodItemsByMenuTitle(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token)) return;
+        String path = ex.getRequestURI().getPath();
+        String[] pathParts = path.split("/");
+        Long restaurantId = Long.parseLong(pathParts[2]);
+        String menuTitle = pathParts[4];
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
+
+            Menu menu = session.createQuery("FROM Menu WHERE title = :menuTitle AND restaurant.id = :restaurantId", Menu.class)
+                    .setParameter("menuTitle", menuTitle)
+                    .setParameter("restaurantId", restaurantId)
+                    .uniqueResult();
+
+            if (menu == null) {
+                JsonHelper.sendJson(ex, 404, new ErrorResponse("Resource not found: Menu not found."));
+                return;
+            }
+
+            org.hibernate.Hibernate.initialize(menu.getItems());
+
+            List<FoodItem> foodItems = menu.getItems().stream().collect(Collectors.toList());
+
+            List<FoodItemResponse> foodItemResponses = foodItems.stream()
+                    .map(FoodItemResponse::new)
+                    .collect(Collectors.toList());
+
+            JsonHelper.sendJson(ex, 200, foodItemResponses);
+
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid ID or title format."));
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while getting food items for menu."));
         }
     }
 
