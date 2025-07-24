@@ -23,6 +23,8 @@ import util.JwtUtil;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FoodItemHandler implements HttpHandler {
 
@@ -52,6 +54,8 @@ public class FoodItemHandler implements HttpHandler {
                 handleUpdateFoodItem(ex, token);
             } else if (path.matches("/restaurants/\\d+/item/\\d+") && "DELETE".equalsIgnoreCase(method)) {
                 handleDeleteFoodItem(ex, token);
+            } else if (path.matches("/restaurants/\\d+/items") && "GET".equalsIgnoreCase(method)) {  // اند پیونت جدید برای راحتی توی فرانت
+                handleGetFoodItemsForRestaurant(ex, token);  // دادن فود ایتم های یک رستوران خاص
             } else {
                 ex.sendResponseHeaders(404, -1);
             }
@@ -92,6 +96,32 @@ public class FoodItemHandler implements HttpHandler {
         }
         return foodItem;
     }  // اگر توی تست های مشکل داشتیم این بخش باید مجدد چک شه
+
+    private void handleGetFoodItemsForRestaurant(HttpExchange ex, String token) throws IOException {  //  متد برای اند پوینت جدید
+        if (ErrorHandler.FindError(ex, token)) return;
+
+        String path = ex.getRequestURI().getPath();
+        Long restaurantId = Long.parseLong(path.split("/")[2]);
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
+
+            List<FoodItem> foodItems = session.createQuery("FROM entity.FoodItem WHERE restaurant.id = :restaurantId", FoodItem.class)
+                    .setParameter("restaurantId", restaurantId)
+                    .list();
+            List<FoodItemResponse> foodItemResponses = foodItems.stream()
+                    .map(FoodItemResponse::new)
+                    .collect(Collectors.toList());
+
+            JsonHelper.sendJson(ex, 200, foodItemResponses);
+
+        } catch (NumberFormatException e) {
+            JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid Restaurant ID format."));
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while getting food items for restaurant."));
+        }
+    }
 
 
     private void handleAddFoodItemToRestaurant(HttpExchange ex, String token) throws IOException {
