@@ -87,10 +87,32 @@ public class AdminHandler implements HttpHandler {
                 return;
             }
 
+            // اند پوینت جدید ادیمن برای دیدن نام ایتم ها
+            if (method.equalsIgnoreCase("GET") && path.equals("/admin/fooditems")) {
+                handleGetFoodItems(ex, token);
+                return;
+            }
+
             ex.sendResponseHeaders(404, -1);
         }catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
+    }
+
+
+    // متد جدید برای اند پوینت جدید ادمین
+    private void handleGetFoodItems(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex, "ADMIN", token)) {
+            return;
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<FoodItem> foodItems = session.createQuery("FROM FoodItem", FoodItem.class).list();
+            JsonHelper.sendJson(ex, 200, foodItems);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while fetching food items."));
         }
     }
 
