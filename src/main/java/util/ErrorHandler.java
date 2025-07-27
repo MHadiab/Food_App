@@ -35,14 +35,14 @@ public class ErrorHandler {
         return false;
     }
 
-//    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
-//        String userKey = JwtUtil.getUserIdFromToken(token);
-//        if (!RateLimiter.allowRequest(userKey)) {
-//            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
-//            return true;
-//        }
-//        return false;
-//    }
+    private static Boolean ManyRequestError(HttpExchange ex, String token) throws IOException {
+        String userKey = JwtUtil.getUserIdFromToken(token);
+        if (!RateLimiter.allowRequest(userKey)) {
+            JsonHelper.sendJson(ex, 429, new ErrorResponse("Too many requests"));
+            return true;
+        }
+        return false;
+    }
 
     public static boolean FindError(HttpExchange ex, String token) throws IOException {
         String auth = ex.getRequestHeaders().getFirst("Authorization");

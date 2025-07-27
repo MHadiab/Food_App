@@ -5,13 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0684b-c48a-4859-ba1e-ab05095bf453" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" afterPath="$PROJECT_DIR$/data.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/CourierHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dto/UserInfo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/UserInfo.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/ErrorHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/util/RateLimiter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/util/RateLimiter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/util/RateLimiter$SimpleRateBucket.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/RateLimiter$SimpleRateBucket.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/util/RateLimiter.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/RateLimiter.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/FoodItemHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/FoodItemHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/MenuHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/MenuHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/RestaurantHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/RestaurantHandler.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/util/ErrorHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/util/ErrorHandler.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -196,6 +200,14 @@
       <workItem from="1753013446923" duration="6399000" />
       <workItem from="1753098615606" duration="3354000" />
       <workItem from="1753198544581" duration="4410000" />
+      <workItem from="1753257674163" duration="3463000" />
+      <workItem from="1753269681947" duration="606000" />
+      <workItem from="1753353450892" duration="20000" />
+      <workItem from="1753543335699" duration="1651000" />
+      <workItem from="1753600889045" duration="210000" />
+      <workItem from="1753601316806" duration="6584000" />
+      <workItem from="1753616807390" duration="149000" />
+      <workItem from="1753617004258" duration="15000" />
     </task>
     <servers />
   </component>

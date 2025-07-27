@@ -248,7 +248,7 @@ public class RestaurantHandler implements HttpHandler {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("invalid address"));
             return;
         }
-        if (req.getPhone() == null || !req.getPhone().matches(MOBILE_REGEX)) {
+        if (req.getPhone() == null || (!req.getPhone().matches(MOBILE_REGEX) && !req.getPhone().matches("^021\\d{8}$"))) {
             JsonHelper.sendJson(ex, 400, new ErrorResponse("invalid phone"));
             return;
         }
