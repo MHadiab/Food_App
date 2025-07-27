@@ -57,7 +57,8 @@ public class MenuHandler implements HttpHandler {
                 handleAddItemToMenu(ex, token);
             } else if (path.matches("/restaurants/\\d+/menu/[^/]+/\\d+") && "DELETE".equalsIgnoreCase(method)) {
                 handleDeleteItemFromMenu(ex, token);
-            } else if (path.matches("^/restaurants/\\d+/menus$") && "GET".equalsIgnoreCase(method)) {  // اینو جدید اضافه کردم برای بالا اوردن منو های یه رستوران توی فرانتم
+            } else if (path.matches("/restaurants/\\d+/menus$") && "GET".equalsIgnoreCase(method)) {  // اینو جدید اضافه کردم برای بالا اوردن منو های یه رستوران توی فرانتم
+                System.out.println("Im here1");
                 handleGetMenusByRestaurantId(ex, token);  // همچین اند پوینی رو نداشتیم توی بک و جدید اضافه کردم
             } else if (path.matches("/restaurants/\\d+/menu/[^/]+/items") && "GET".equalsIgnoreCase(method)) { // اند پیونت جدید
                 handleGetFoodItemsByMenuTitle(ex, token); // دادن فود ایتم ها برای یک منو با تایتل خاص
