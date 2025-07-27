@@ -108,8 +108,17 @@ public class AdminHandler implements HttpHandler {
         }
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            List<FoodItem> foodItems = session.createQuery("FROM FoodItem", FoodItem.class).list();
-            JsonHelper.sendJson(ex, 200, foodItems);
+            // Fetch FoodItem entities and eagerly fetch related Restaurant and Keywords
+            // Use JOIN FETCH to avoid N+1 problem and LazyInitializationException
+            List<FoodItem> foodItems = session.createQuery(
+                            "SELECT fi FROM FoodItem fi LEFT JOIN FETCH fi.restaurant LEFT JOIN FETCH fi.keywords", FoodItem.class)
+                    .list();
+
+            // Convert FoodItem entities to FoodItemResponse DTOs
+            List<FoodItemResponse> foodItemResponses = foodItems.stream()
+                    .map(FoodItemResponse::new)
+                    .collect(Collectors.toList());
+            JsonHelper.sendJson(ex, 200, foodItemResponses);
         } catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while fetching food items."));
