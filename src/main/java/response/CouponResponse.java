@@ -19,6 +19,8 @@ public class CouponResponse {
     private Integer userCount;
     private String startDate;
     private String endDate;
+    private boolean active;
+    private Integer timesUsed;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -37,5 +39,7 @@ public class CouponResponse {
         if (coupon.getEndDate() != null) {
             this.endDate = coupon.getEndDate().format(DATE_FORMATTER);
         }
+        this.active = coupon.isActive();
+        this.timesUsed = coupon.getTimesUsed();
     }
 }

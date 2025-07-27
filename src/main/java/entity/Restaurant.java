@@ -34,9 +34,9 @@ public class Restaurant {
     private Integer additional_fee;
 
     @Column(nullable = false)
-    private long seller_id;
+    private Long seller_id;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
-    private boolean active = true;   // برای رستوارن اکتیو گذاشتم میتونیم برش داریم در صورت استفاده نشدن
+    private Boolean active = true;   // برای رستوارن اکتیو گذاشتم میتونیم برش داریم در صورت استفاده نشدن
 
 }

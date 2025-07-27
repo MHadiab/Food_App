@@ -14,6 +14,8 @@ public class RestaurantResponse {
     private String logoBase64;
     private Integer taxFee;
     private Integer additionalFee;
+    private Long sellerId;
+    private Boolean active;
 
     public RestaurantResponse(Restaurant restaurant) {
         this.id = restaurant.getId();
@@ -23,5 +25,7 @@ public class RestaurantResponse {
         this.logoBase64 = restaurant.getLogoBase64();
         this.taxFee = restaurant.getTax_fee();
         this.additionalFee = restaurant.getAdditional_fee();
+        this.sellerId = restaurant.getSeller_id();
+        this.active = true;
     }
 }

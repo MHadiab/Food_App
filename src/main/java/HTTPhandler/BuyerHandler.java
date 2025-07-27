@@ -123,6 +123,7 @@ public class BuyerHandler implements HttpHandler {
             }
             if ("GET".equalsIgnoreCase(method) && "/coupons".equals(path)) {
                 handleCheckCouponValidity(ex,token);
+                return;
             }
             if ("GET".equalsIgnoreCase(method) && path.matches("/ratings/\\d+")) {
                 handleGetRatingDetails(ex,token);
@@ -654,7 +655,7 @@ public class BuyerHandler implements HttpHandler {
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Restaurant restaurant = session.get(Restaurant.class, vendorId);
-            if (restaurant == null || !restaurant.isActive()) {
+            if (restaurant == null || !restaurant.getActive()) {
                 JsonHelper.sendJson(ex, 404, new ErrorResponse("Vendor not found or not active."));
                 return;
             }
@@ -782,7 +783,7 @@ public class BuyerHandler implements HttpHandler {
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             FoodItem item = session.get(FoodItem.class, itemId);
-            if (item == null || !item.isActive() || item.getRestaurant() == null || !item.getRestaurant().isActive()) {
+            if (item == null || !item.isActive() || item.getRestaurant() == null || !item.getRestaurant().getActive()) {
                 JsonHelper.sendJson(ex, 404, new ErrorResponse("Item not found, not active, or belongs to an inactive vendor."));
                 return;
             }

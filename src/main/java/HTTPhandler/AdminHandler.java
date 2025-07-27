@@ -87,10 +87,41 @@ public class AdminHandler implements HttpHandler {
                 return;
             }
 
+            // اند پوینت جدید ادیمن برای دیدن نام ایتم ها
+            if (method.equalsIgnoreCase("GET") && path.equals("/admin/fooditems")) {
+                handleGetFoodItems(ex, token);
+                return;
+            }
+
             ex.sendResponseHeaders(404, -1);
         }catch (Exception e) {
             e.printStackTrace();
             JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal Server Error"));
+        }
+    }
+
+
+    // متد جدید برای اند پوینت جدید ادمین
+    private void handleGetFoodItems(HttpExchange ex, String token) throws IOException {
+        if (ErrorHandler.FindError(ex, token) || ErrorHandler.Forbid(ex, "ADMIN", token)) {
+            return;
+        }
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Fetch FoodItem entities and eagerly fetch related Restaurant and Keywords
+            // Use JOIN FETCH to avoid N+1 problem and LazyInitializationException
+            List<FoodItem> foodItems = session.createQuery(
+                            "SELECT fi FROM FoodItem fi LEFT JOIN FETCH fi.restaurant LEFT JOIN FETCH fi.keywords", FoodItem.class)
+                    .list();
+
+            // Convert FoodItem entities to FoodItemResponse DTOs
+            List<FoodItemResponse> foodItemResponses = foodItems.stream()
+                    .map(FoodItemResponse::new)
+                    .collect(Collectors.toList());
+            JsonHelper.sendJson(ex, 200, foodItemResponses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonHelper.sendJson(ex, 500, new ErrorResponse("Internal server error while fetching food items."));
         }
     }
 
