@@ -28,6 +28,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 public class MenuHandler implements HttpHandler {
 
@@ -139,7 +141,7 @@ public class MenuHandler implements HttpHandler {
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]);
-        String menuTitle = pathParts[4];
+        String menuTitle = URLDecoder.decode(pathParts[4], StandardCharsets.UTF_8.toString());
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             if (wrongSellerOrOwner(ex, token, restaurantId, session)) return;
@@ -217,7 +219,7 @@ public class MenuHandler implements HttpHandler {
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]);
-        String menuTitle = pathParts[4];
+        String menuTitle = URLDecoder.decode(pathParts[4], StandardCharsets.UTF_8.toString());
 
         if (ErrorHandler.FindError(ex, token)) return;
 
@@ -247,7 +249,7 @@ public class MenuHandler implements HttpHandler {
         String path = ex.getRequestURI().getPath();
         String[] pathParts = path.split("/");
         Long restaurantId = Long.parseLong(pathParts[2]);
-        String menuTitle = pathParts[4];
+        String menuTitle = URLDecoder.decode(pathParts[4], StandardCharsets.UTF_8.toString());
 
         if (ErrorHandler.FindError(ex, token)) return;
 
