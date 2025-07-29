@@ -1,5 +1,6 @@
 package response;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import entity.Restaurant;
@@ -11,6 +12,7 @@ public class RestaurantResponse {
     private String name;
     private String address;
     private String phone;
+    @SerializedName("logoBase64")
     private String logoBase64;
     private Integer tax_fee;
     private Integer additional_fee;

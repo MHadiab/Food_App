@@ -133,6 +133,7 @@ public class UserHandler implements HttpHandler {
             user.setRole(RoleEnum);
             user.setAddress(req.getAddress());
             user.setBank_info(req.getBank_info());
+            user.setProfileImageBase64(req.getProfileImageBase64());
             session.persist(user);
             tx.commit();
             String token = JwtUtil.generateToken(user);

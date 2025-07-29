@@ -1,5 +1,6 @@
 package dto;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 @Setter
 public class FoodItemRequest {
     private String name;
+    @SerializedName("imageBase64")
     private String imageBase64;
     private String description;
     private Integer price;

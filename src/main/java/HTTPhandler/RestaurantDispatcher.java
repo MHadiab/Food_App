@@ -24,9 +24,6 @@ public class RestaurantDispatcher implements HttpHandler {
             menuHandler.handle(ex);
             return;
         }
-        else {
-            System.out.println("Im here4-------------------------------------");
-        }
         restaurantHandler.handle(ex);
     }
 }

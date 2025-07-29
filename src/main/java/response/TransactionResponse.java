@@ -11,6 +11,7 @@ public class TransactionResponse {
     private Integer user_id;
     private String method;
     private String status;
+    private double amount;
     public TransactionResponse(Transaction tx) {
         this.id= Math.toIntExact(tx.getId());
         if(tx.getOrder() != null) this.order_id = Math.toIntExact(tx.getOrder().getId());
@@ -18,5 +19,6 @@ public class TransactionResponse {
         this.user_id= Math.toIntExact(tx.getUser().getUser_id());
         this.method=tx.getMethod().toString();
         this.status=tx.getStatus().toString();
+        this.amount=tx.getAmount();
     }
 }

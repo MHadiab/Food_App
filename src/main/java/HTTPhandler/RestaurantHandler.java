@@ -332,6 +332,7 @@ public class RestaurantHandler implements HttpHandler {
             if (req.getName() != null) restaurant.setName(req.getName());
             if (req.getAddress() != null) restaurant.setAddress(req.getAddress());
             if (req.getPhone() != null) restaurant.setPhone(req.getPhone());
+
             if (req.getLogoBase64() != null) restaurant.setLogoBase64(req.getLogoBase64());
             if (req.getTax_fee() != null) restaurant.setTax_fee(req.getTax_fee());
             if (req.getAdditional_fee() != null) restaurant.setAdditional_fee(req.getAdditional_fee());

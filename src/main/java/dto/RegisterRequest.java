@@ -1,5 +1,6 @@
 package dto;
 
+import com.google.gson.annotations.SerializedName;
 import entity.BankInfo;
 import entity.Role;
 import lombok.Getter;
@@ -14,6 +15,7 @@ public class RegisterRequest {
     private String password;
     private String role;
     private String address;
+    @SerializedName("profileImageBase64")
     private String profileImageBase64;
     private BankInfo bank_info;
 }

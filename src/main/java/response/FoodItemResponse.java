@@ -35,6 +35,7 @@
 
 package response;
 
+import com.google.gson.annotations.SerializedName;
 import entity.FoodItem;
 import entity.Menu; // این import را اضافه کنید
 import entity.Restaurant;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
 public class FoodItemResponse {
     private Long id;
     private String name;
+    @SerializedName("imageBase64")
     private String imageBase64;
     private String description;
     private Integer price;
