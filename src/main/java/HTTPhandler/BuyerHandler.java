@@ -496,9 +496,9 @@ public class BuyerHandler implements HttpHandler {
 
             for (OrderItemDTO dto : req.getItems()) {
                 if (dto.getItem_id() == null || !dto.getItem_id().toString().equalsIgnoreCase(restaurant.getId().toString())) {
-                    System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++");
-                    System.out.println(restaurant.getId().toString()+": "+dto.getItem_id());
-                    System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++");
+//                    System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++");
+//                    System.out.println(restaurant.getId().toString()+": "+dto.getItem_id());
+//                    System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++");
                     JsonHelper.sendJson(ex, 400, new ErrorResponse("Each item must have a non-null item_id"));
                     return;
                 }
@@ -526,9 +526,10 @@ public class BuyerHandler implements HttpHandler {
             if (req.getCoupon_id() != null) {
                 Query<Coupon> query = session.createQuery("FROM Coupon c WHERE c.couponCode = :code", Coupon.class);
                 query.setParameter("code", req.getCoupon_id().toString().trim());
+
                 Coupon coupon = query.uniqueResult();
                 if (coupon == null) {
-                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid coupon_id"));
+                    JsonHelper.sendJson(ex, 400, new ErrorResponse("Invalid coupon_id , its null"));
                     return;
                 }
                 else {

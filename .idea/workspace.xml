@@ -8,17 +8,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" afterPath="$PROJECT_DIR$/data.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantDispatcher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/RestaurantHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/UserHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/EditProfileRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/EditProfileRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/FoodItemRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/FoodItemRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/RegisterRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/RegisterRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dto/RestaurantRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dto/RestaurantRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/FoodItemResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/FoodItemResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/RestaurantResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/RestaurantResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/response/TransactionResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/response/TransactionResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/response/RestaurantResponse.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/response/RestaurantResponse.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,7 +84,8 @@
       <workItem from="1753648675131" duration="2634000" />
       <workItem from="1753653682733" duration="2162000" />
       <workItem from="1753659431329" duration="2579000" />
-      <workItem from="1753770609529" duration="9222000" />
+      <workItem from="1753770609529" duration="9611000" />
+      <workItem from="1753783006666" duration="2378000" />
     </task>
     <servers />
   </component>
