@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="38eb0e3f-1ddc-4a51-9e1f-62a9a3f3f027" name="Changes" comment="اند پوینت جدید ادمین">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.db" beforeDir="false" afterPath="$PROJECT_DIR$/data.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/HTTPhandler/BuyerHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/HTTPhandler/BuyerHandler.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,6 +83,8 @@
       <workItem from="1753659431329" duration="2579000" />
       <workItem from="1753770609529" duration="9611000" />
       <workItem from="1753783006666" duration="2378000" />
+      <workItem from="1753785706917" duration="255000" />
+      <workItem from="1753798039443" duration="34000" />
     </task>
     <servers />
   </component>
