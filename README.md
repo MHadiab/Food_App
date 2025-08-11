@@ -55,4 +55,4 @@ This API provides comprehensive functionalities to manage a food ordering system
 
 ## 📄 API Documentation
 
-Complete details for all endpoints, data models, and potential responses are defined in the `openapi.yaml` file included in the project.
+Complete details for all endpoints, data models, and potential responses are defined in the `aut_food.yaml` file included in the project.
