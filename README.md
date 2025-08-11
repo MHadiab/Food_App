@@ -48,7 +48,7 @@ This API provides comprehensive functionalities to manage a food ordering system
     ```
 
 2.  **Install dependencies:**
-    The project can be built using Maven or Gradle. Dependencies (like Hibernate and the SQLite driver) will be downloaded automatically.
+    The project can be built using Maven. Dependencies (like Hibernate and the SQLite driver) will be downloaded automatically.
 
 3.  **Run the project:**
     After a successful build, run the application. The SQLite database file will be created automatically on the first run.
