@@ -44,7 +44,7 @@ This API provides comprehensive functionalities to manage a food ordering system
 
 1.  **Clone the project:**
     ```bash
-    git clone [[YOUR_REPOSITORY_URL]](https://github.com/MHadiab/Food_App.git)
+    git clone https://github.com/MHadiab/Food_App.git
     ```
 
 2.  **Install dependencies:**
